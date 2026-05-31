@@ -37,7 +37,7 @@
       </div>
       <div class="cached-btns">
         <button class="cache-btn use" onclick="useCachedMain()">✓ USE</button>
-        <button class="cache-btn replace" onclick="document.getElementById('xmlInput').click()">↺ REPLACE</button>
+        <button class="cache-btn replace" style="display:none">↺ REPLACE</button><label for="xmlInput" style="font-family:monospace;font-size:9px;padding:4px 8px;border:1px solid var(--border);color:var(--muted);cursor:pointer">↺ REPLACE</label>
         <button class="cache-btn clear" onclick="clearCachedMain()">✕</button>
       </div>
     </div>
@@ -49,7 +49,7 @@
       </div>
       <div class="cached-btns">
         <button class="cache-btn use" onclick="useCachedScratch()">✓ USE</button>
-        <button class="cache-btn replace" onclick="document.getElementById('scratchInput').click()">↺ REPLACE</button>
+        <button class="cache-btn replace" style="display:none">↺ REPLACE</button><label for="scratchInput" style="font-family:monospace;font-size:9px;padding:4px 8px;border:1px solid var(--border);color:var(--muted);cursor:pointer">↺ REPLACE</label>
         <button class="cache-btn clear" onclick="clearCachedScratch()">✕</button>
       </div>
     </div>
@@ -59,16 +59,26 @@
       <div class="drop-icon">📂</div>
       <h3>Race Data XML</h3>
       <p>Trackmaster Plus format</p>
-      <input type="file" id="xmlInput" accept=".xml,.XML" style="display:block;width:100%;margin-top:12px;padding:10px;background:#1a1a08;color:var(--gold);border:1px solid var(--gold-d);font-family:monospace;font-size:12px;cursor:pointer;">
-      <div id="mainLbl" style="margin-top:8px"></div>
+      <input type="file" id="xmlInput" accept=".xml,.XML"
+        style="display:block;width:100%;margin-top:14px;padding:12px 8px;
+               background:var(--gold);color:#0a0a08;border:none;
+               font-family:monospace;font-size:13px;font-weight:600;
+               cursor:pointer;text-align:center;border-radius:0;
+               -webkit-appearance:none;">
+      <div id="mainLbl" style="margin-top:8px;font-family:monospace;font-size:10px"></div>
     </div>
     <div class="drop-zone sz" id="dzScratch">
       <div class="opt-tag">Optional</div>
       <div class="drop-icon">❌</div>
       <h3>Scratches & Changes</h3>
       <p>Today's changes XML</p>
-      <input type="file" id="scratchInput" accept=".xml,.XML" style="display:block;width:100%;margin-top:12px;padding:10px;background:#1a0a0a;color:var(--red-b);border:1px solid var(--red);font-family:monospace;font-size:12px;cursor:pointer;">
-      <div id="scratchLbl" style="margin-top:8px"></div>
+      <input type="file" id="scratchInput" accept=".xml,.XML"
+        style="display:block;width:100%;margin-top:14px;padding:12px 8px;
+               background:#8b2a38;color:#f0ede4;border:none;
+               font-family:monospace;font-size:13px;font-weight:600;
+               cursor:pointer;text-align:center;border-radius:0;
+               -webkit-appearance:none;">
+      <div id="scratchLbl" style="margin-top:8px;font-family:monospace;font-size:10px"></div>
     </div>
   </div>
   <div class="weight-config">
