@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Test</title>
+<style>
+body { background:#111; color:#fff; font-family:monospace; padding:20px; }
+label { display:block; background:#c9a84c; color:#000; padding:20px; text-align:center; font-size:18px; margin-bottom:20px; border-radius:4px; }
+#log { background:#222; padding:16px; font-size:14px; line-height:2; min-height:100px; }
+</style>
+</head>
+<body>
+<label for="f">TAP HERE TO SELECT FILE</label>
+<input type="file" id="f" accept=".xml,.XML" style="display:none">
+<div id="log">Waiting for file...</div>
+<script>
+document.getElementById('f').addEventListener('change', function() {
+  var log = document.getElementById('log');
+  var files = this.files;
+  if (!files || files.length === 0) {
+    log.innerHTML = 'ERROR: No files in event';
+    return;
+  }
+  var file = files[0];
+  log.innerHTML = 'File selected!<br>Name: ' + file.name + '<br>Size: ' + file.size + ' bytes<br>Type: ' + file.type;
+  var reader = new FileReader();
+  reader.onerror = function() { log.innerHTML += '<br>READ ERROR: ' + reader.error; };
+  reader.onload = function(e) {
+    var txt = e.target.result;
+    log.innerHTML += '<br>Read OK: ' + txt.length + ' chars<br>First 100: ' + txt.substring(0,100);
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
