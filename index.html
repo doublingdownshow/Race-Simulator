@@ -184,21 +184,21 @@ window.onerror = function(msg, src, line, col, err) {
   return false;
 };
 
-const WK = ['power','pfigfin','jock','avgspd','pfigerl','trnr','hispd','avgcls','odds','tds','comm','purse'];
-let W = {};
+var WK = ['power','pfigfin','jock','avgspd','pfigerl','trnr','hispd','avgcls','odds','tds','comm','purse'];
+var W = {};
 WK.forEach(k => { W[k] = 0; });
 function UW() {
-let total = 0;
-WK.forEach(k => { const v=parseInt(document.getElementById('w_'+k).value); W[k]=v; document.getElementById('wv_'+k).textContent=v+'%'; total+=v; });
-const el = document.getElementById('wtTotal');
+var total = 0;
+WK.forEach(k => { var v=parseInt(document.getElementById('w_'+k).value); W[k]=v; document.getElementById('wv_'+k).textContent=v+'%'; total+=v; });
+var el = document.getElementById('wtTotal');
 el.textContent = total+'%'; el.className = total===100?'':'ov';
 document.getElementById('startBtn').disabled = !mainLoaded;
 saveWeights();
 }
-let raceData=[], scratchData={}, currentRace=0, simResults=null, mainLoaded=false;
+var raceData=[], scratchData={}, currentRace=0, simResults=null, mainLoaded=false;
 // Multi-track store: { trackCode: { raceData, filename, loadedAt } }
-let trackStore = {};
-let currentTrack = null;
+var trackStore = {};
+var currentTrack = null;
 // Safe localStorage wrapper — file:// protocol blocks localStorage on iOS
 function safeLS(op, key, val) {
 try {
@@ -208,14 +208,14 @@ if (op === 'del') { localStorage.removeItem(key); return true; }
 } catch(e) { return null; }
 return null;
 }
-const LS_MAIN    = 'raceSimMainXML';
-const LS_TRACKS  = 'raceSimTracks';   // JSON index of all cached tracks
-const LS_MAIN_N  = 'raceSimMainName';
-const LS_MAIN_D  = 'raceSimMainDate';
-const LS_SCRATCH = 'raceSimScratchXML';
-const LS_SCRT_N  = 'raceSimScratchName';
-const LS_SCRT_D  = 'raceSimScratchDate';
-const LS_WEIGHTS = 'raceSimWeights';
+var LS_MAIN    = 'raceSimMainXML';
+var LS_TRACKS  = 'raceSimTracks';   // JSON index of all cached tracks
+var LS_MAIN_N  = 'raceSimMainName';
+var LS_MAIN_D  = 'raceSimMainDate';
+var LS_SCRATCH = 'raceSimScratchXML';
+var LS_SCRT_N  = 'raceSimScratchName';
+var LS_SCRT_D  = 'raceSimScratchDate';
+var LS_WEIGHTS = 'raceSimWeights';
 function saveMainXML(xml, filename) {
 try {
 safeLS('set',LS_MAIN,xml);
@@ -235,16 +235,16 @@ try { safeLS('set',LS_WEIGHTS,JSON.stringify(W)); } catch(e) {}
 }
 function loadWeights() {
 try {
-const saved = safeLS('get',LS_WEIGHTS);
+var saved = safeLS('get',LS_WEIGHTS);
 if (!saved) return;
-const sw = JSON.parse(saved);
+var sw = JSON.parse(saved);
 Object.keys(sw).forEach(k => {
 W[k] = sw[k];
-const el = document.getElementById('w_'+k);
+var el = document.getElementById('w_'+k);
 if (el) { el.value = sw[k]; document.getElementById('wv_'+k).textContent = sw[k]+'%'; }
 });
-const tot = Object.values(W).reduce((s,v)=>s+v,0);
-const el = document.getElementById('wtTotal');
+var tot = Object.values(W).reduce((s,v)=>s+v,0);
+var el = document.getElementById('wtTotal');
 if (el) { el.textContent=tot+'%'; el.className=tot===100?'':'ov'; }
 } catch(e) {}
 }
@@ -265,31 +265,31 @@ scratchData = {};
 refreshCacheStrip();
 }
 function useCachedMain() {
-const xml  = safeLS('get',LS_MAIN);
-const name = safeLS('get',LS_MAIN_N) || 'cached_race.xml';
+var xml  = safeLS('get',LS_MAIN);
+var name = safeLS('get',LS_MAIN_N) || 'cached_race.xml';
 if (!xml) return;
 try {
 parseMain(xml);
 mainLoaded = true;
-document.getElementById('mainLbl').innerHTML = `<span class="fl ml">✓ ${name} (cached)</span>`;
+document.getElementById('mainLbl').innerHTML = '<span class="fl ml">✓ '+(name)+' (cached)</span>';
 document.getElementById('startBtn').disabled = false;
 } catch(e) { alert('Cached race XML error: '+e.message); clearCachedMain(); }
 }
 function useCachedScratch() {
-const xml  = safeLS('get',LS_SCRATCH);
-const name = safeLS('get',LS_SCRT_N) || 'cached_scratch.xml';
+var xml  = safeLS('get',LS_SCRATCH);
+var name = safeLS('get',LS_SCRT_N) || 'cached_scratch.xml';
 if (!xml) return;
 try {
 parseScratch(xml);
-document.getElementById('scratchLbl').innerHTML = `<span class="fl sl">✓ ${name} (cached)</span>`;
+document.getElementById('scratchLbl').innerHTML = '<span class="fl sl">✓ '+(name)+' (cached)</span>';
 } catch(e) { alert('Cached scratch XML error: '+e.message); clearCachedScratch(); }
 }
 function refreshCacheStrip() {
-const hasMain    = !!safeLS('get',LS_MAIN);
-const hasScratch = !!safeLS('get',LS_SCRATCH);
-const strip = document.getElementById('cachedStrip');
-const mainRow    = document.getElementById('cachedMainRow');
-const scratchRow = document.getElementById('cachedScratchRow');
+var hasMain    = !!safeLS('get',LS_MAIN);
+var hasScratch = !!safeLS('get',LS_SCRATCH);
+var strip = document.getElementById('cachedStrip');
+var mainRow    = document.getElementById('cachedMainRow');
+var scratchRow = document.getElementById('cachedScratchRow');
 if (hasMain || hasScratch) {
 strip.style.display = 'block';
 if (hasMain) {
@@ -316,39 +316,39 @@ try { loadWeights(); } catch(e) {}
 try { refreshCacheStrip(); } catch(e) {}
 try { loadTrackStore(); } catch(e) {}
 try {
-const mainXML = safeLS('get', LS_MAIN);
-const scratchXML = safeLS('get', LS_SCRATCH);
+var mainXML = safeLS('get', LS_MAIN);
+var scratchXML = safeLS('get', LS_SCRATCH);
 // If we have multi-track store, go straight to app
 if (Object.keys(trackStore).length > 0) {
-  const firstCode = Object.keys(trackStore)[0];
+  var firstCode = Object.keys(trackStore)[0];
   raceData = trackStore[firstCode].raceData;
   mainLoaded = true;
-  const sxml = safeLS('get', LS_SCRATCH);
+  var sxml = safeLS('get', LS_SCRATCH);
   if (sxml) { try { parseScratch(sxml); } catch(e) {} }
   applyScratches();
   document.getElementById('uploadScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   currentTrack = firstCode;
   renderTrackTabs();
-  const r0 = raceData[0];
-  const tc = (r0 && r0.track ? r0.track.trim() : '')||firstCode;
+  var r0 = raceData[0];
+  var tc = (r0 && r0.track ? r0.track.trim() : '')||firstCode;
   document.getElementById('trackBadge').textContent=tc;
   document.getElementById('appTitle').textContent=trkName(tc);
   document.getElementById('appSub').textContent=raceData.length+' RACES';
-  const totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
-  if(totalSc>0){const sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
+  var totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+  if(totalSc>0){var sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
   buildNav(); selectRace(0);
 } else if (mainXML) {
 try {
 parseMain(mainXML);
 mainLoaded = true;
-const name = safeLS('get', LS_MAIN_N) || 'cached_race.xml';
+var name = safeLS('get', LS_MAIN_N) || 'cached_race.xml';
 document.getElementById('mainLbl').innerHTML = '<span class="fl ml">✓ ' + name + ' (cached)</span>';
 document.getElementById('startBtn').disabled = false;
 if (scratchXML) {
 try {
 parseScratch(scratchXML);
-const sname = safeLS('get', LS_SCRT_N) || 'cached_scratch.xml';
+var sname = safeLS('get', LS_SCRT_N) || 'cached_scratch.xml';
 document.getElementById('scratchLbl').innerHTML = '<span class="fl sl">✓ ' + sname + ' (cached)</span>';
 } catch(e) {}
 }
@@ -374,14 +374,14 @@ if (xiExtra) xiExtra.addEventListener('change', function() {
 }, 100);
 });
 function setupDZ(id, fn) {
-const dz=document.getElementById(id);
+var dz=document.getElementById(id);
 dz.addEventListener('dragenter',e=>{e.preventDefault();e.stopPropagation();dz.classList.add('dg');});
 dz.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();dz.classList.add('dg');return false;});
 dz.addEventListener('dragleave',e=>{e.preventDefault();e.stopPropagation();dz.classList.remove('dg');});
 dz.addEventListener('drop',e=>{
 e.preventDefault();e.stopPropagation();
 dz.classList.remove('dg');
-const file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
 if(file)fn(file);
 return false;
 });
@@ -404,18 +404,18 @@ el.onclick = () => el.style.display='none';
 }
 function readFile(file, cb) {
 showStatus('📂 Reading: ' + file.name + ' (' + file.size + ' bytes)');
-const r = new FileReader();
+var r = new FileReader();
 r.onerror = () => showStatus('❌ FileReader error: ' + r.error, true);
 r.onload = e => {
 try {
-let txt = e.target.result;
+var txt = e.target.result;
 showStatus('✓ Read OK — ' + txt.length + ' chars. Parsing...');
 if (!txt || txt.length < 10) {
 showStatus('❌ File appears empty or unreadable', true); return;
 }
 if (txt.indexOf('�') > -1) {
 showStatus('↺ Re-reading as UTF-8...');
-const r2 = new FileReader();
+var r2 = new FileReader();
 r2.onerror = () => showStatus('❌ UTF-8 read error', true);
 r2.onload = e2 => { try { cb(e2.target.result); } catch(ex) { showStatus('❌ Callback error: ' + ex.message, true); } };
 r2.readAsText(file, 'UTF-8');
@@ -461,38 +461,38 @@ showStatus('❌ Scratch parse error: '+e.message, true);
 });
 }
 function parseMain(xml) {
-const doc=new DOMParser().parseFromString(xml,'text/xml');
+var doc=new DOMParser().parseFromString(xml,'text/xml');
 if(doc.querySelector('parsererror'))throw new Error('Invalid XML');
-const races=doc.querySelectorAll('racedata');
+var races=doc.querySelectorAll('racedata');
 if(!races.length)throw new Error('No racedata found');
 raceData=[];
 races.forEach(re=>{
-const gt=function(t){var el=re.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
-const race={race:gt('race'),dist:gt('dist_disp')||gt('distance'),surface:gt('surface'),purse:gt('purse'),track:gt('track'),raceDate:gt('race_date'),horses:[]};
+var gt=function(t){var el=re.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
+var race={race:gt('race'),dist:gt('dist_disp')||gt('distance'),surface:gt('surface'),purse:gt('purse'),track:gt('track'),raceDate:gt('race_date'),horses:[]};
 re.querySelectorAll(':scope > horsedata').forEach(he=>{
-const hg=function(t){var el=he.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
-const n=v=>{var f=parseFloat(v);return(!isNaN(f)&&v&&v!=='NA'&&v!==''&&f!==0)?f:null;};
-let jn='',jw=0,js=0;
-const jel=he.querySelector(':scope > jockey');
+var hg=function(t){var el=he.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
+var n=v=>{var f=parseFloat(v);return(!isNaN(f)&&v&&v!=='NA'&&v!==''&&f!==0)?f:null;};
+var jn='',jw=0,js=0;
+var jel=he.querySelector(':scope > jockey');
 if(jel){var jd=jel.querySelector('jock_disp');jn=jd?jd.textContent.trim():'';jel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){js=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();jw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});}
-let tn='',tw=0,ts=0;
-const tel=he.querySelector(':scope > trainer');
+var tn='',tw=0,ts=0;
+var tel=he.querySelector(':scope > trainer');
 if(tel){var td2=tel.querySelector('tran_disp');tn=td2?td2.textContent.trim():'';tel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){ts=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();tw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});}
-let ltw=0,lts=0;
+var ltw=0,lts=0;
 he.querySelectorAll(':scope > stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LIFETIME'){lts=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();ltw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});
-let tdsW=0,tdsS=0;
-const TDS_TYPES=['AT_TRK_CRS','DIST_SURF','AT_DST_CRS','AT_TRKSURF'];
+var tdsW=0,tdsS=0;
+var TDS_TYPES=['AT_TRK_CRS','DIST_SURF','AT_DST_CRS','AT_TRKSURF'];
 he.querySelectorAll(':scope > stats_data > stat').forEach(s=>{
 if(TDS_TYPES.includes(s.getAttribute('type'))){
-const ss=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();
-const sw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();
+var ss=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();
+var sw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();
 if(ss>tdsS){tdsS=ss;tdsW=sw;}
 }
 });
-const comm=hg('horse_comm')||'';
-const commPos=(comm.match(/\[\+\]/g)||[]).length;
-const commNeg=(comm.match(/\[-\]/g)||[]).length;
-const commScore=commPos-commNeg;
+var comm=hg('horse_comm')||'';
+var commPos=(comm.match(/\[\+\]/g)||[]).length;
+var commNeg=(comm.match(/\[-\]/g)||[]).length;
+var commScore=commPos-commNeg;
 // FTS: sire data
 var sireEl=he.querySelector(':scope > sire');
 var sireFTSW=0,sireFTSS=0,studFee=0,sireName='';
@@ -550,21 +550,21 @@ if(!raceData.length)throw new Error('No horse data found');
 }
 function parseScratch(xml) {
 scratchData={};
-const doc=new DOMParser().parseFromString(xml,'text/xml');
+var doc=new DOMParser().parseFromString(xml,'text/xml');
 if(doc.querySelector('parsererror'))throw new Error('Invalid scratch XML');
 doc.querySelectorAll('track').forEach(te=>{
-const tid=(te.getAttribute('id')||'').trim();
+var tid=(te.getAttribute('id')||'').trim();
 scratchData[tid]={};
 te.querySelectorAll('race').forEach(re=>{
-const rn=re.getAttribute('race_number');
-const ri={scratched:[],changes:[]};
+var rn=re.getAttribute('race_number');
+var ri={scratched:[],changes:[]};
 re.querySelectorAll('start_changes > horse').forEach(he=>{
-const hn=he.getAttribute('horse_name')||'', pp=he.getAttribute('program_number')||'';
-let isSc=false,scr='';
+var hn=he.getAttribute('horse_name')||'', pp=he.getAttribute('program_number')||'';
+var isSc=false,scr='';
 he.querySelectorAll('change').forEach(ce=>{
-const desc=ce.querySelector('change_description') ? el.textContent.trim() : "";
-const nv=ce.querySelector('new_value') ? el.textContent.trim() : "";
-const ov=ce.querySelector('old_value') ? el.textContent.trim() : "";
+var desc=ce.querySelector('change_description') ? el.textContent.trim() : "";
+var nv=ce.querySelector('new_value') ? el.textContent.trim() : "";
+var ov=ce.querySelector('old_value') ? el.textContent.trim() : "";
 if(desc==='Scratched'&&nv==='Y')isSc=true;
 else if(desc==='Scratch Reason'&&nv&&nv!=='Reason Unavailable')scr=nv;
 else if(desc==='Jockey'&&nv)ri.changes.push({horse:hn,pp,type:'JOCKEY',old:ov,new:nv});
@@ -578,24 +578,24 @@ scratchData[tid][rn]=ri;
 }
 function applyScratches() {
 if(!raceData.length)return;
-const tc=(raceData[0] && raceData[0].track ? raceData[0].track.trim() : '') || '';
+var tc=(raceData[0] && raceData[0].track ? raceData[0].track.trim() : '') || '';
 raceData.forEach(race=>{
 race.horses.forEach(h=>{h.scratched=false;h.scratchReason='';h.changes=[];h.jn=h.jnOrig;});
-const rc=scratchData[tc] ? scratchData[tc][race.race] : null;
+var rc=scratchData[tc] ? scratchData[tc][race.race] : null;
 if(!rc)return;
 rc.scratched.forEach(sc=>{
-const h=race.horses.find(h=>h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase());
+var h=race.horses.find(h=>h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase());
 if(h){h.scratched=true;h.scratchReason=sc.reason||'Scratched';}
 });
 rc.changes.forEach(chg=>{
-const h=race.horses.find(h=>h.pp==chg.pp||h.name.toLowerCase()===chg.horse.toLowerCase());
+var h=race.horses.find(h=>h.pp==chg.pp||h.name.toLowerCase()===chg.horse.toLowerCase());
 if(h){if(chg.type==='JOCKEY')h.jn=chg.new;h.changes.push(chg);}
 });
 });
 }
 // ===== MULTI-TRACK FUNCTIONS =====
 function saveTrackStore() {
-  const index = Object.keys(trackStore).map(k => ({
+  var index = Object.keys(trackStore).map(k => ({
     code: k, filename: trackStore[k].filename, loadedAt: trackStore[k].loadedAt
   }));
   safeLS('set', LS_TRACKS, JSON.stringify(index));
@@ -606,17 +606,17 @@ function saveTrackStore() {
 }
 
 function loadTrackStore() {
-  const idx = safeLS('get', LS_TRACKS);
+  var idx = safeLS('get', LS_TRACKS);
   if (!idx) return;
   try {
-    const index = JSON.parse(idx);
+    var index = JSON.parse(idx);
     index.forEach(entry => {
-      const xml = safeLS('get', 'raceSimTrack_'+entry.code);
+      var xml = safeLS('get', 'raceSimTrack_'+entry.code);
       if (xml) {
         try {
-          const rd = [];
+          var rd = [];
           // Temporarily parse into temp array
-          const saved = raceData;
+          var saved = raceData;
           raceData = rd;
           parseMain(xml);
           trackStore[entry.code] = {
@@ -631,7 +631,7 @@ function loadTrackStore() {
 }
 
 function addTrackToStore(xml, filename, raceDataArr) {
-  const code = (raceDataArr[0] && raceDataArr[0].track ? raceDataArr[0].track.trim() : '') || filename.replace(/\.xml$/i,'').toUpperCase().slice(0,6);
+  var code = (raceDataArr[0] && raceDataArr[0].track ? raceDataArr[0].track.trim() : '') || filename.replace(/\.xml$/i,'').toUpperCase().slice(0,6);
   trackStore[code] = { raceData: raceDataArr, xml, filename, loadedAt: new Date().toLocaleString() };
   saveTrackStore();
   renderTrackTabs();
@@ -639,23 +639,23 @@ function addTrackToStore(xml, filename, raceDataArr) {
 }
 
 function renderTrackTabs() {
-  const list = document.getElementById('trackTabList');
-  const tabs = document.getElementById('trackTabs');
+  var list = document.getElementById('trackTabList');
+  var tabs = document.getElementById('trackTabs');
   if (!list) return;
-  const keys = Object.keys(trackStore);
+  var keys = Object.keys(trackStore);
   if (keys.length === 0) { tabs.style.display='none'; return; }
   tabs.style.display = 'flex';
   list.innerHTML = '';
   keys.forEach(code => {
-    const entry = trackStore[code];
-    const hasScratch = !!scratchData[code];
-    const btn = document.createElement('button');
+    var entry = trackStore[code];
+    var hasScratch = !!scratchData[code];
+    var btn = document.createElement('button');
     btn.className = 'track-tab' + (code===currentTrack?' active':'') + (hasScratch?' has-scratch':'');
     btn.title = entry.filename + ' · ' + entry.loadedAt;
     btn.innerHTML = code + '<span style="font-size:8px;opacity:0.6;margin-left:3px">' + entry.raceData.length + 'R</span>';
     btn.onclick = () => switchToTrack(code);
     // Long press to remove
-    let pressTimer;
+    var pressTimer;
     btn.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { if(confirm('Remove '+code+'?')) removeTrack(code); }, 600); });
     btn.addEventListener('touchend', () => clearTimeout(pressTimer));
     list.appendChild(btn);
@@ -676,8 +676,8 @@ function switchToTrack(code) {
   document.getElementById('trackBadge').textContent = code;
   document.getElementById('appTitle').textContent = trkName(code);
   document.getElementById('appSub').textContent = trackStore[code].loadedAt + ' · ' + raceData.length + ' RACES';
-  const totalSc = raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
-  const sb = document.getElementById('scBadge');
+  var totalSc = raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+  var sb = document.getElementById('scBadge');
   if (totalSc > 0) { sb.style.display='inline-block'; sb.textContent='✂ '+totalSc+' SCRATCHES'; }
   else { sb.style.display='none'; }
 }
@@ -686,7 +686,7 @@ function removeTrack(code) {
   delete trackStore[code];
   safeLS('del', 'raceSimTrack_'+code);
   saveTrackStore();
-  const remaining = Object.keys(trackStore);
+  var remaining = Object.keys(trackStore);
   if (remaining.length > 0) switchToTrack(remaining[0]);
   else resetApp();
 }
@@ -705,10 +705,10 @@ function handleExtraTrack(file) {
   showStatus('📂 Loading track: ' + file.name);
   readFile(file, txt => {
     try {
-      const saved = raceData;
+      var saved = raceData;
       raceData = [];
       parseMain(txt);
-      const newRaceData = raceData.slice();
+      var newRaceData = raceData.slice();
       raceData = saved;
       addTrackToStore(txt, file.name, newRaceData);
       showStatus('✅ ' + file.name + ' added — ' + newRaceData.length + ' races');
@@ -720,7 +720,7 @@ function handleExtraTrack(file) {
 
 function startApp() {
 applyScratches();
-const r0=raceData[0], tc=(r0 && r0.track ? r0.track.trim() : '')||'TRK';
+var r0=raceData[0], tc=(r0 && r0.track ? r0.track.trim() : '')||'TRK';
 // Add to multi-track store
 trackStore[tc] = { raceData:raceData.slice(), xml: safeLS('get',LS_MAIN)||'', filename: safeLS('get',LS_MAIN_N)||tc+'.xml', loadedAt: new Date().toLocaleString() };
 saveTrackStore();
@@ -728,11 +728,11 @@ currentTrack = tc;
 document.getElementById('uploadScreen').style.display='none';
 document.getElementById('appScreen').style.display='block';
 renderTrackTabs();
-const totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+var totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
 document.getElementById('trackBadge').textContent=tc;
 document.getElementById('appTitle').textContent=trkName(tc);
-document.getElementById('appSub').textContent=`${r0.raceDate?fmtDate(r0.raceDate):''} · ${raceData.length} RACES`;
-if(totalSc>0){const sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent=`✂ ${totalSc} SCRATCHES`;}
+document.getElementById('appSub').textContent=(r0.raceDate?fmtDate(r0.raceDate):'')+' · '+raceData.length+' RACES';
+if(totalSc>0){var sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
 buildNav(); selectRace(0);
 }
 function resetApp() {
@@ -740,22 +740,22 @@ document.getElementById('uploadScreen').style.display='flex';
 document.getElementById('appScreen').style.display='none';
 document.getElementById('xmlInput').value='';
 document.getElementById('scratchInput').value='';
-const mn = safeLS('get',LS_MAIN_N);
-const sn = safeLS('get',LS_SCRT_N);
-document.getElementById('mainLbl').innerHTML   = mn ? `<span class="fl ml">✓ ${mn} (cached)</span>` : '';
-document.getElementById('scratchLbl').innerHTML= sn ? `<span class="fl sl">✓ ${sn} (cached)</span>` : '';
+var mn = safeLS('get',LS_MAIN_N);
+var sn = safeLS('get',LS_SCRT_N);
+document.getElementById('mainLbl').innerHTML   = mn ? '<span class="fl ml">✓ '+mn+' (cached)</span>' : '';
+document.getElementById('scratchLbl').innerHTML= sn ? '<span class="fl sl">✓ '+sn+' (cached)</span>' : '';
 raceData=[];scratchData={};simResults=null;mainLoaded=false;
 refreshCacheStrip();
-const mxml = safeLS('get',LS_MAIN);
+var mxml = safeLS('get',LS_MAIN);
 if (mxml) { try { parseMain(mxml); mainLoaded=true; document.getElementById('startBtn').disabled=false; } catch(e){} }
-const sxml = safeLS('get',LS_SCRATCH);
+var sxml = safeLS('get',LS_SCRATCH);
 if (sxml) { try { parseScratch(sxml); } catch(e){} }
 }
 function buildNav() {
-const nav=document.getElementById('raceNav');nav.innerHTML='';
+var nav=document.getElementById('raceNav');nav.innerHTML='';
 raceData.forEach((r,i)=>{
-const sc=r.horses.filter(h=>h.scratched).length;
-const btn=document.createElement('button');btn.className='race-btn';
+var sc=r.horses.filter(h=>h.scratched).length;
+var btn=document.createElement('button');btn.className='race-btn';
 btn.innerHTML='R'+r.race+(sc?'<span class="sdot" title="'+sc+' scratched"></span>':'');
 btn.onclick=()=>selectRace(i);nav.appendChild(btn);
 });
@@ -763,42 +763,36 @@ btn.onclick=()=>selectRace(i);nav.appendChild(btn);
 function selectRace(idx) {
 currentRace=idx;simResults=null;
 document.querySelectorAll('.race-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
-const r=raceData[idx];
-document.getElementById('raceTitle').textContent=`Race ${r.race}`;
-const act=r.horses.filter(h=>!h.scratched), sc=r.horses.filter(h=>h.scratched);
-const sf=r.surface==='T'?'mp-turf':'mp-dirt', sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
-document.getElementById('raceMeta').innerHTML=`
-<span class="mp mp-d">${r.dist||'?'}</span>
-<span class="mp ${sf}">${sl}</span>
-${r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':''}
-<span class="mp mp-n">${act.length} ACTIVE</span>
-${sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':''}
-`;
-const sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
-if(sc.length){sl2.innerHTML=sc.map(h=>`<span class="sc-tag">PP${h.pp} ${h.name}${h.scratchReason?' · '+h.scratchReason:''}</span>`).join('');sa.style.display='block';}else sa.style.display='none';
-const allChg=r.horses.filter(h=>!h.scratched&&h.changes.length>0);
-const ca=document.getElementById('chgAlert'),cl=document.getElementById('chgList');
-if(allChg.length){cl.innerHTML=allChg.flatMap(h=>h.changes.map(c=>`<span class="chg-tag">PP${h.pp} ${h.name}: ${c.type} → ${c.new}</span>`)).join('');ca.style.display='block';}else ca.style.display='none';
+var r=raceData[idx];
+document.getElementById('raceTitle').textContent='Race '+r.race;
+var act=r.horses.filter(h=>!h.scratched), sc=r.horses.filter(h=>h.scratched);
+var sf=r.surface==='T'?'mp-turf':'mp-dirt', sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
+document.getElementById('raceMeta').innerHTML='\n<span class="mp mp-d">'+(r.dist||'?')+'</span>\n<span class="mp '+(sf)+'">'+(sl)+'</span>\n'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+'\n<span class="mp mp-n">'+(act.length)+' ACTIVE</span>\n'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'')+'\n';
+var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
+if(sc.length){sl2.innerHTML=sc.map(function(h){return '<span class="sc-tag">PP'+h.pp+' '+h.name+(h.scratchReason?' · '+h.scratchReason:'')+'</span>';}).join('');sa.style.display='block';}else sa.style.display='none';
+var allChg=r.horses.filter(h=>!h.scratched&&h.changes.length>0);
+var ca=document.getElementById('chgAlert'),cl=document.getElementById('chgList');
+if(allChg.length){cl.innerHTML=allChg.flatMap(h=>h.changes.map(function(c){return '<span class="chg-tag">PP'+h.pp+' '+h.name+': '+c.type+' → '+c.new+'</span>';})).join('');ca.style.display='block';}else ca.style.display='none';
 document.getElementById('placeholder').style.display='block';
 document.getElementById('results').style.display='none';
 document.getElementById('runBtn').disabled=act.length<2;
 }
 function analyzePaceScenario(horses) {
-const n = horses.length;
+var n = horses.length;
 if (n === 0) return [];
-const classified = horses.map(h => {
-const erl = (h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl) || null;
-const mid = (h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid) || null;
-const fin = (h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin) || null;
-const hasStyle = erl !== null && erl > 0;
-const pfe = (h.pfigerl !== null && h.pfigerl !== undefined ? h.pfigerl : h.pallfigerl) || null;
-const pfm = (h.pfigmid !== null && h.pfigmid !== undefined ? h.pfigmid : h.pallfigmid) || null;
-const pff = (h.pfigfin !== null && h.pfigfin !== undefined ? h.pfigfin : h.pallfigfin) || null;
-let paceFade = null;
+var classified = horses.map(h => {
+var erl = (h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl) || null;
+var mid = (h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid) || null;
+var fin = (h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin) || null;
+var hasStyle = erl !== null && erl > 0;
+var pfe = (h.pfigerl !== null && h.pfigerl !== undefined ? h.pfigerl : h.pallfigerl) || null;
+var pfm = (h.pfigmid !== null && h.pfigmid !== undefined ? h.pfigmid : h.pallfigmid) || null;
+var pff = (h.pfigfin !== null && h.pfigfin !== undefined ? h.pfigfin : h.pallfigfin) || null;
+var paceFade = null;
 if (pfe && pff && pfe > 0 && pff > 0) {
 paceFade = pff - pfe;
 }
-let styleBucket = 'UNKNOWN';
+var styleBucket = 'UNKNOWN';
 if (hasStyle) {
 if (erl <= 2.0)       styleBucket = 'WIRE';
 else if (erl <= 3.5)  styleBucket = 'PRESSER';
@@ -813,19 +807,19 @@ classified_h.paceFade = paceFade; classified_h.styleBucket = styleBucket;
 classified_h.hasStyle = hasStyle;
 return classified_h;
 });
-const withStyle = classified.filter(h => h.hasStyle && h.erl > 0);
-const speedHorses  = withStyle.filter(h => h.erl <= 3.0);
-const pressers     = withStyle.filter(h => h.erl > 3.0 && h.erl <= 4.5);
-const stalkers     = withStyle.filter(h => h.erl > 4.5 && h.erl <= 6.0);
-const closers      = withStyle.filter(h => h.erl > 6.0);
-const numSpeed    = speedHorses.length;
-const numClosers  = closers.length;
-const avgErl      = withStyle.length > 0
+var withStyle = classified.filter(h => h.hasStyle && h.erl > 0);
+var speedHorses  = withStyle.filter(h => h.erl <= 3.0);
+var pressers     = withStyle.filter(h => h.erl > 3.0 && h.erl <= 4.5);
+var stalkers     = withStyle.filter(h => h.erl > 4.5 && h.erl <= 6.0);
+var closers      = withStyle.filter(h => h.erl > 6.0);
+var numSpeed    = speedHorses.length;
+var numClosers  = closers.length;
+var avgErl      = withStyle.length > 0
 ? withStyle.reduce((s,h)=>s+h.erl,0)/withStyle.length : 5.0;
-const paceSetterPF = withStyle.length > 0
+var paceSetterPF = withStyle.length > 0
 ? Math.max.apply(null, withStyle.filter(function(h){return h.pfe;}).map(function(h){return h.pfe;}))
 : null;
-let scenario, scenarioDesc, scenarioColor;
+var scenario, scenarioDesc, scenarioColor;
 if (numSpeed === 0) {
 scenario = 'NO_SPEED';
 scenarioDesc = 'No established speed — unpredictable pace, watch for unexpected front runner';
@@ -833,22 +827,22 @@ scenarioColor = '#7a6a30';
 } else if (numSpeed === 1 && speedHorses[0].pfe && paceSetterPF &&
 speedHorses[0].pfe >= paceSetterPF - 5) {
 scenario = 'LONE_SPEED';
-scenarioDesc = `Lone speed scenario — ${speedHorses[0].name} can control fractions, significant front-runner advantage`;
+scenarioDesc = 'Lone speed scenario — '+speedHorses[0].name+' has clear lead, front-runner advantage';
 scenarioColor = '#30a060';
 } else if (numSpeed >= 3) {
 scenario = 'HOT_PACE';
-scenarioDesc = `Hot contested pace (${numSpeed} speed horses) — early leaders likely to tire, closers and stalkers favored`;
+scenarioDesc = 'Hot contested pace ('+numSpeed+' speed horses), closers and stalkers favored';
 scenarioColor = '#c05030';
 } else if (numSpeed === 2) {
-const pf1 = (speedHorses[0] ? speedHorses[0].pfe : 0), pf2 = (speedHorses[1] ? speedHorses[1].pfe : 0);
-const paceGap = Math.abs(pf1 - pf2);
+var pf1 = (speedHorses[0] ? speedHorses[0].pfe : 0), pf2 = (speedHorses[1] ? speedHorses[1].pfe : 0);
+var paceGap = Math.abs(pf1 - pf2);
 if (paceGap < 8) {
 scenario = 'PACE_DUEL';
-scenarioDesc = `Pace duel likely between ${speedHorses[0].name} & ${speedHorses[1].name} — expect fast fractions, both may tire`;
+scenarioDesc = speedHorses[1]?('Pace duel likely between '+speedHorses[0].name+' and '+speedHorses[1].name+', both may tire'):'Pace duel, both may tire';
 scenarioColor = '#c08030';
 } else {
 scenario = 'SOFT_PACE';
-scenarioDesc = `Two speed horses but one dominant — moderate pace, speed with class advantage`;
+scenarioDesc = 'Two speed horses but one dominant — moderate pace, class advantage';
 scenarioColor = '#6a9a30';
 }
 } else {
@@ -856,9 +850,9 @@ scenario = 'HONEST_PACE';
 scenarioDesc = 'Honest pace — all running styles have fair opportunity';
 scenarioColor = '#5888b0';
 }
-const multipliers = classified.map(h => {
+var multipliers = classified.map(h => {
 if (!h.hasStyle || h.erl === 0) return 1.0;
-let mult = 1.0;
+var mult = 1.0;
 switch (scenario) {
 case 'LONE_SPEED':
 if (h.styleBucket === 'WIRE')    mult += 0.10;
@@ -914,13 +908,13 @@ mult += 0.02;
 }
 return Math.max(mult, 0.1);
 });
-const horseNotes = classified.map((h, i) => {
-const notes = [];
-const m = multipliers[i];
+var horseNotes = classified.map((h, i) => {
+var notes = [];
+var m = multipliers[i];
 if (!h.hasStyle || h.erl === 0) {
 notes.push('No pace data available');
 } else {
-const styleNames = {
+var styleNames = {
 WIRE:'Front Runner', PRESSER:'Pace Presser',
 STALKER:'Stalker', CLOSER:'Closer', DEEP:'Deep Closer'
 };
@@ -932,8 +926,8 @@ else if (m <= 0.80) notes.push('🔴 Significant pace scenario risk');
 else if (m <= 0.90) notes.push('🔴 Pace scenario risk');
 else if (m <= 0.97) notes.push('🟡 Slight pace concern');
 if (h.paceFade !== null) {
-if (h.paceFade >= 10)  notes.push(`Strong finisher (PF +${h.paceFade.toFixed(0)})`);
-else if (h.paceFade <= -10) notes.push(`Fades late (PF ${h.paceFade.toFixed(0)})`);
+if (h.paceFade >= 10)  notes.push(('Strong finisher (PF +'+h.paceFade.toFixed(0)+')'));
+else if (h.paceFade <= -10) notes.push(('Fades late (PF '+h.paceFade.toFixed(0)+')'));
 }
 if (scenario === 'LONE_SPEED' && speedHorses[0].name === h.name) {
 notes.push('⭐ The lone speed — controls pace');
@@ -955,7 +949,7 @@ speedHorses: speedHorses.map(h=>h.name),
 horseNotes
 };
 }
-function oddsToProb(s){if(!s)return .1;const p=s.split('/');if(p.length===2){const n=parseFloat(p[0]),d=parseFloat(p[1]);if(!isNaN(n)&&!isNaN(d)&&(n+d)>0)return d/(n+d);}return .1;}
+function oddsToProb(s){if(!s)return .1;var p=s.split('/');if(p.length===2){var n=parseFloat(p[0]),d=parseFloat(p[1]);if(!isNaN(n)&&!isNaN(d)&&(n+d)>0)return d/(n+d);}return .1;}
 function styleLabel(v){
 if(!v)return{label:'?',cls:''};
 if(v<=2)return{label:'E/P',cls:'ep'};
@@ -1110,8 +1104,8 @@ if (h.lts <= 2 && h._ftsFieldAvg !== undefined) {
     return fieldAvg * (0.75 + adj + saleBonus + wrkBonus);
   }
 }
-const tot=WK.reduce((s,k)=>s+W[k],0)||100;
-const norm=(v,lo,hi)=>Math.min(Math.max((v-lo)/(hi-lo),0),1);
+var tot=WK.reduce((s,k)=>s+W[k],0)||100;
+var norm=(v,lo,hi)=>Math.min(Math.max((v-lo)/(hi-lo),0),1);
 // Use fallbacks for missing/zero values
 var _power   = (h.power   && h.power   > 0) ? h.power   : 70;
 var _avgSpd  = (h.avgSpd  && h.avgSpd  > 0) ? h.avgSpd  : 75;
@@ -1119,22 +1113,22 @@ var _hiSpd   = (h.hiSpd   && h.hiSpd   > 0) ? h.hiSpd   : _avgSpd; // NA → use
 var _pfigfin = (h.pfigfin && h.pfigfin > 0) ? h.pfigfin : (h.pallfigfin && h.pallfigfin > 0 ? h.pallfigfin : _avgSpd);
 var _pfigerl = (h.pfigerl && h.pfigerl > 0) ? h.pfigerl : (h.pallfigerl && h.pallfigerl > 0 ? h.pallfigerl : _avgSpd);
 var _avgcls  = (h.avgcls  !== null && h.avgcls !== undefined) ? h.avgcls : 80;
-const powerN  = norm(_power,   40, 120);
-const avgSpdN = norm(_avgSpd,  40, 130);
-const hiSpdN  = norm(_hiSpd,   40, 135);
-const pfigfinN= norm(_pfigfin, 30, 120);
-const pfigerlN= norm(_pfigerl, 30, 110);
-const avgclsN = norm(Math.max(_avgcls, -50), -50, 125);
-const oddsN   = oddsToProb(h.odds);
-const jockN   = h.js>0?h.jw/h.js:0.18;
-const trnrN   = h.ts>0?h.tw/h.ts:0.18;
-const tdsN    = h.tdsS>0?h.tdsW/h.tdsS:0.12;
-const commN   = (h.commScore+4)/8;
-const purseN  = norm(h.avpurval || 0, 0, 8);
-const lasixBonus = h.med==='X'?0.04:(h.med==='1'?0.01:0);
-const equipBonus = h.equip&&h.equip.trim()?0.02:0;
-const wtPenalty = h.wghtShift>0?h.wghtShift*0.003:0;
-const base = (
+var powerN  = norm(_power,   40, 120);
+var avgSpdN = norm(_avgSpd,  40, 130);
+var hiSpdN  = norm(_hiSpd,   40, 135);
+var pfigfinN= norm(_pfigfin, 30, 120);
+var pfigerlN= norm(_pfigerl, 30, 110);
+var avgclsN = norm(Math.max(_avgcls, -50), -50, 125);
+var oddsN   = oddsToProb(h.odds);
+var jockN   = h.js>0?h.jw/h.js:0.18;
+var trnrN   = h.ts>0?h.tw/h.ts:0.18;
+var tdsN    = h.tdsS>0?h.tdsW/h.tdsS:0.12;
+var commN   = (h.commScore+4)/8;
+var purseN  = norm(h.avpurval || 0, 0, 8);
+var lasixBonus = h.med==='X'?0.04:(h.med==='1'?0.01:0);
+var equipBonus = h.equip&&h.equip.trim()?0.02:0;
+var wtPenalty = h.wghtShift>0?h.wghtShift*0.003:0;
+var base = (
 (W.power/tot)  * powerN  +
 (W.avgspd/tot) * avgSpdN +
 (W.hispd/tot)  * hiSpdN  +
@@ -1151,9 +1145,9 @@ const base = (
 return Math.max(base + lasixBonus + equipBonus - wtPenalty, 0.001);
 }
 function weightedSample(horses,weights){
-const av=horses.map((h,i)=>({h,w:weights[i]}));const res=[];
+var av=horses.map((h,i)=>({h,w:weights[i]}));var res=[];
 for(var k=0;k<horses.length;k++){
-const no=av.map(a=>({h:a.h,score:a.w*(1+(Math.random()-.5)*.28)}));
+var no=av.map(a=>({h:a.h,score:a.w*(1+(Math.random()-.5)*.28)}));
 no.sort((a,b)=>b.score-a.score);res.push(no[0].h);
 av.splice(av.findIndex(a=>a.h===no[0].h),1);
 }
@@ -1212,11 +1206,11 @@ setTimeout(runChunk,0);
 }
 
 function renderResults(){
-const race=raceData[currentRace];
+var race=raceData[currentRace];
 var wins=simResults.wins,places=simResults.places,shows=simResults.shows;
 var exacta=simResults.exacta,trifecta=simResults.trifecta,TOTAL=simResults.TOTAL;
 var weights=simResults.weights,horses=simResults.horses,paceAnalysis=simResults.paceAnalysis;
-const ranked=horses.map(function(h,i){
+var ranked=horses.map(function(h,i){
 var r=Object.assign({},h);
 r.winPct=+(wins[i]/TOTAL*100).toFixed(1);
 r.placePct=+(places[i]/TOTAL*100).toFixed(1);
@@ -1224,70 +1218,61 @@ r.showPct=+(shows[i]/TOTAL*100).toFixed(1);
 r.idx=i; r.fts=analyzeFTS(h);
 return r;
 }).sort(function(a,b){return b.winPct-a.winPct;});
-const maxWin=Math.max.apply(null,[1].concat(ranked.map(function(h){return h.winPct;})));
-const pg=document.getElementById('picksGrid');pg.innerHTML='';
+var maxWin=Math.max.apply(null,[1].concat(ranked.map(function(h){return h.winPct;})));
+var pg=document.getElementById('picksGrid');pg.innerHTML='';
 [{cls:'pc-w',lbl:'MOST LIKELY WIN',sk:'winPct',vl:'WIN'},{cls:'pc-p',lbl:'MOST LIKELY PLACE',sk:'placePct',vl:'PLACE'},{cls:'pc-s',lbl:'MOST LIKELY SHOW',sk:'showPct',vl:'SHOW'}].forEach(({cls,lbl,sk,vl})=>{
-const top=ranked.slice().sort((a,b)=>b[sk]-a[sk])[0];
-const st=styleLabel(getStyle(top));
-const card=document.createElement('div');card.className=`pick-card ${cls}`;
-const pipHtml=buildStylePips(top,true);
-card.innerHTML=`
-<div class="plbl">${lbl}</div>
-<div class="pname">${top.name}</div>
-<div class="psub">PP${top.pp} · ${top.odds} MO · Power ${top.power || '—'} · ${st.label}</div>
-<div class="style-bar">${pipHtml}<span class="style-label">${styleDesc(top)}</span></div>
-<div class="pstats">
-<div class="pstat"><span class="val">${top[sk]}%</span><span class="lbl">${vl} RATE</span></div>
-<div class="pstat"><span class="val">${top.pfigfin || '—'}</span><span class="lbl">FIN PACE FIG</span></div>
-<div class="pstat"><span class="val">${top.avgcls || '—'}</span><span class="lbl">AVG CLASS</span></div>
-</div>`;
+var top=ranked.slice().sort((a,b)=>b[sk]-a[sk])[0];
+var st=styleLabel(getStyle(top));
+var card=document.createElement('div');card.className='pick-card '+cls;
+var pipHtml=buildStylePips(top,true);
+card.innerHTML='<div class="plbl">'+(lbl)+'</div>'+'<div class="pname">'+(top.name)+'</div>'+'<div class="psub">PP'+(top.pp)+' · '+(top.odds)+' MO · Power '+(top.power||'—')+' · '+(st.label)+'</div>'+'<div class="style-bar">'+(pipHtml)+'<span class="style-label">'+(styleDesc(top))+'</span></div>'+'<div class="pstats">'+'<div class="pstat"><span class="val">'+(top[sk])+'%</span><span class="lbl">'+(vl)+' RATE</span></div>'+'<div class="pstat"><span class="val">'+(top.pfigfin||'—')+'</span><span class="lbl">FIN PACE FIG</span></div>'+'<div class="pstat"><span class="val">'+(top.avgcls||'—')+'</span><span class="lbl">AVG CLASS</span></div>'+'</div>';
 pg.appendChild(card);
 });
 renderPaceScenario(paceAnalysis, horses, ranked);
-const tbody=document.getElementById('winTbody');tbody.innerHTML='';
-let rk=1;
+var tbody=document.getElementById('winTbody');tbody.innerHTML='';
+var rk=1;
 ranked.concat(race.horses.filter(function(h){return h.scratched;})).forEach(h=>{
-const isSc=h.scratched;
-const tr=document.createElement('tr');if(isSc)tr.className='sr';
-const st=styleLabel(getStyle(h));
-const jHtml=h.jn!==h.jnOrig?'<span class="chg">'+h.jn+'</span> <span style="text-decoration:line-through;font-size:8px">'+h.jnOrig+'</span>':(h.jn||'—');
-const medHtml=h.med==='X'?'<span class="flag lasix-f">1st LASIX</span>':h.med==='1'?'<span class="flag lasix-f">LASIX</span>':'';
-const equipHtml=h.equip&&h.equip.trim()?'<span class="flag equip-f">'+h.equip+'</span>':'';
-const commHtml=h.commPos>0?'<span class="flag comm-pos">+'+h.commPos+'</span>':'';
-const commNHtml=h.commNeg>0?'<span class="flag comm-neg">-'+h.commNeg+'</span>':'';
-const wtHtml=h.wghtShift>0?'<span class="flag wt-up">▲'+h.wghtShift+'</span>':h.wghtShift<0?'<span class="flag wt-dn">▼'+Math.abs(h.wghtShift)+'</span>':'';
+var isSc=h.scratched;
+var tr=document.createElement('tr');if(isSc)tr.className='sr';
+var st=styleLabel(getStyle(h));
+var jHtml=h.jn!==h.jnOrig?'<span class="chg">'+h.jn+'</span> <span style="text-decoration:line-through;font-size:8px">'+h.jnOrig+'</span>':(h.jn||'—');
+var medHtml=h.med==='X'?'<span class="flag lasix-f">1st LASIX</span>':h.med==='1'?'<span class="flag lasix-f">LASIX</span>':'';
+var equipHtml=h.equip&&h.equip.trim()?'<span class="flag equip-f">'+h.equip+'</span>':'';
+var commHtml=h.commPos>0?'<span class="flag comm-pos">+'+h.commPos+'</span>':'';
+var commNHtml=h.commNeg>0?'<span class="flag comm-neg">-'+h.commNeg+'</span>':'';
+var wtHtml=h.wghtShift>0?'<span class="flag wt-up">▲'+h.wghtShift+'</span>':h.wghtShift<0?'<span class="flag wt-dn">▼'+Math.abs(h.wghtShift)+'</span>':'';
 var ftsHtml=h.lts<=2?ftsBadgeHtml(h):'';
 tr.innerHTML='<td>'+'<span class="hrk">'+(isSc?'—':'#'+rk++)+'</span>'+'<span class="hn">'+h.name+'</span><span class="hpp">PP'+h.pp+'</span>'+(isSc?('<span class="sr-badge">✂ '+(h.scratchReason||'SCR')+'</span>'):'')+medHtml+equipHtml+commHtml+commNHtml+wtHtml+ftsHtml+'<span class="hjt">'+jHtml+' / '+(h.tn||'—')+'</span>'+'</td>'+'<td class="r odds-c">'+h.odds+'</td>'+'<td class="r">'+(h.power||'—')+'</td>'+'<td class="r"><div class="rs-mini">'+buildMiniPips(h)+'</div></td>'+'<td class="r">'+(h.pfigerl||'—')+'</td>'+'<td class="r">'+(h.pfigfin||'—')+'</td>'+'<td class="r">'+(h.avgcls||'—')+'</td>'+(isSc?('<td colspan="6" style="text-align:right;font-size:9px;color:var(--scratch-b)">SCRATCHED</td>'):('<td class="r pc-c pw">'+h.winPct+'%</td>'+'<td><div class="bw"><div class="bt"><div class="bf bfw" style="width:'+(h.winPct/maxWin*100).toFixed(0)+'%"></div></div></div></td>'+'<td class="r pc-c pp2">'+h.placePct+'%</td>'+'<td><div class="bw"><div class="bt"><div class="bf bfp" style="width:'+Math.min(h.placePct*1.4,100).toFixed(0)+'%"></div></div></div></td>'+'<td class="r pc-c ps">'+h.showPct+'%</td>'+'<td><div class="bw"><div class="bt"><div class="bf bfs" style="width:'+Math.min(h.showPct*1.4,100).toFixed(0)+'%"></div></div></div></td>'));
 tbody.appendChild(tr);
 });
-const el=document.getElementById('exactaList');el.innerHTML='';
+var el=document.getElementById('exactaList');el.innerHTML='';
 Object.entries(exacta).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([k,c],i)=>{
 var parts=k.split('-'),p1=parts[0],p2=parts[1],h1=horses.find(function(h){return h.pp==p1;}),h2=horses.find(function(h){return h.pp==p2;});
-const d=document.createElement('div');d.className='combo-row';
+var d=document.createElement('div');d.className='combo-row';
 d.innerHTML='<span class="cn">'+(i+1)+'.</span><span class="ch">'+(h1?h1.name:p1)+'<span class="ca">→</span>'+(h2?h2.name:p2)+'</span><span class="cpct">'+(c/TOTAL*100).toFixed(1)+'%</span>';
 el.appendChild(d);
 });
-const tl=document.getElementById('trifectaList');tl.innerHTML='';
+var tl=document.getElementById('trifectaList');tl.innerHTML='';
 Object.entries(trifecta).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([k,c],i)=>{
 var parts2=k.split('-'),p1=parts2[0],p2=parts2[1],p3=parts2[2],h1=horses.find(function(h){return h.pp==p1;}),h2=horses.find(function(h){return h.pp==p2;}),h3=horses.find(h=>h.pp==p3);
-const d=document.createElement('div');d.className='combo-row';
+var d=document.createElement('div');d.className='combo-row';
 d.innerHTML='<span class="cn">'+(i+1)+'.</span><span class="ch" style="font-size:9px">'+(h1?h1.name:p1)+'<span class="ca">→</span>'+(h2?h2.name:p2)+'<span class="ca">→</span>'+(h3?h3.name:p3)+'</span><span class="cpct">'+(c/TOTAL*100).toFixed(1)+'%</span>';
 tl.appendChild(d);
 });
-const dt=document.getElementById('dtbody');dt.innerHTML='';
-const totW=weights.reduce((s,w)=>s+w,0);
+var dt=document.getElementById('dtbody');dt.innerHTML='';
+var totW=weights.reduce((s,w)=>s+w,0);
 race.horses.forEach(h=>{
-const isSc=h.scratched,idx=horses.indexOf(h);
-const jr=h.js>0?(h.jw/h.js*100).toFixed(0)+'%':'—';
-const tr2=h.ts>0?(h.tw/h.ts*100).toFixed(0)+'%':'—';
-const tdsR=h.tdsS>0?(h.tdsW/h.tdsS*100).toFixed(0)+'%':'—';
-const sw=(!isSc&&idx>=0&&totW>0)?(weights[idx]/totW*100).toFixed(1)+'%':'—';
-const st=styleLabel(getStyle(h));
-const medStr=h.med==='X'?'1st Lasix':h.med==='1'?'On Lasix':h.med==='2'?'Off Lasix':'—';
-const tr=document.createElement('tr');if(isSc)tr.className='sr';
+var isSc=h.scratched,idx=horses.indexOf(h);
+var jr=h.js>0?(h.jw/h.js*100).toFixed(0)+'%':'—';
+var tr2=h.ts>0?(h.tw/h.ts*100).toFixed(0)+'%':'—';
+var tdsR=h.tdsS>0?(h.tdsW/h.tdsS*100).toFixed(0)+'%':'—';
+var sw=(!isSc&&idx>=0&&totW>0)?(weights[idx]/totW*100).toFixed(1)+'%':'—';
+var st=styleLabel(getStyle(h));
+var medStr=h.med==='X'?'1st Lasix':h.med==='1'?'On Lasix':h.med==='2'?'Off Lasix':'—';
+var tr=document.createElement('tr');if(isSc)tr.className='sr';
 tr.innerHTML='<td>'+(h.name)+(isSc?' <span style="font-size:8px;color:var(--red-b)">[SCR]</span>':'')+'</td><td>'+(h.pp)+'</td><td>'+(h.odds)+'</td><td>'+(h.power||'—')+'</td><td>'+(h.avgSpd||'—')+'</td><td>'+(h.hiSpd||'—')+'</td><td>'+(h.pfigerl||'—')+'</td><td>'+(h.pfigfin||'—')+'</td><td>'+(h.avgcls||'—')+'</td><td><span style="color:var(--text)">'+(st.label)+'</span></td><td>'+(h.jn||'—')+'</td><td>'+(jr)+'</td><td>'+(h.tn||'—')+'</td><td>'+(tr2)+'</td><td>'+(tdsR)+'</td><td>'+(h.commScore>0?'<span class="pos-comm">+'+h.commScore+'</span>':h.commScore<0?'<span class="neg-comm">'+h.commScore+'</span>':'0')+'</td><td>'+(medStr)+'</td><td>'+(h.wghtShift!=null?(h.wghtShift>0?'+':'')+h.wghtShift:'—')+'</td><td style="color:var(--gold)">'+(sw)+'</td>';dt.appendChild(tr);
 });
-const wTot=WK.reduce((s,k)=>s+W[k],0);
+var wTot=WK.reduce((s,k)=>s+W[k],0);
 document.getElementById('methodNote').textContent=
 'METHODOLOGY ('+(wTot)+'% total): Power('+(W.power)+'%) + Avg Speed('+(W.avgspd)+'%) + Hi Speed('+(W.hispd)+'%) + Pace Fig Finish('+(W.pfigfin)+'%) + Pace Fig Early('+(W.pfigerl)+'%) + Avg Class('+(W.avgcls)+'%) + Jockey L30('+(W.jock)+'%) + Trainer L30('+(W.trnr)+'%) + Morning Odds('+(W.odds)+'%) + Trk/Dist/Surf Record('+(W.tds)+'%) + Horse Comments('+(W.comm)+'%) + Avg Purse Value('+(W.purse)+'%). Bonuses applied for first-time Lasix (+4%), equipment changes (+2%). Weight increases penalise slightly. Each of 1,000 simulations uses Plackett-Luce sampling with ±14% variance. Scratched horses fully excluded.';
 document.getElementById('results').style.display='block';
@@ -1426,17 +1411,17 @@ function ftsBadgeHtml(h) {
 }
 
 function buildStylePips(h,large){
-const erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl), mid=(h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid), fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
-const sz=large?8:6;
-const calls=[erl,mid,fin];
+var erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl), mid=(h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid), fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
+var sz=large?8:6;
+var calls=[erl,mid,fin];
 return calls.map(v=>{
 if(!v)return'<span style="display:inline-block;width:'+sz+'px;height:'+sz+'px;background:var(--border);margin-right:2px"></span>';
-const cls=styleLabel(v).cls;
+var cls=styleLabel(v).cls;
 return'<span class="style-pip '+cls+'" style="width:'+sz+'px;height:'+sz+'px;display:inline-block;margin-right:2px"></span>';
 }).join('');
 }
 function buildMiniPips(h){
-const erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl),mid=(h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid),fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
+var erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl),mid=(h.pstymid !== null && h.pstymid !== undefined ? h.pstymid : h.pallstymid),fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
 return[erl,mid,fin].map(v=>{
 if(!v)return'<span class="rs-pip"></span>';
 return'<span class="rs-pip '+styleLabel(v).cls+'"></span>';
@@ -1444,12 +1429,12 @@ return'<span class="rs-pip '+styleLabel(v).cls+'"></span>';
 }
 function buildPaceRow(label,val){
 if(!val)return'<div class="pace-style-row"><span class="ps-label">'+label+'</span><div class="ps-bar-wrap"><div class="ps-bar" style="width:0%;background:var(--border)"></div></div><span class="ps-val">—</span></div>';
-const pct=(val/9*100).toFixed(0);
-const col=val<=2?'#e07030':val<=3.5?'#d0a030':val<=5.5?'#a0c030':val<=7?'#30a080':'#3080c0';
+var pct=(val/9*100).toFixed(0);
+var col=val<=2?'#e07030':val<=3.5?'#d0a030':val<=5.5?'#a0c030':val<=7?'#30a080':'#3080c0';
 return'<div class="pace-style-row"><span class="ps-label">'+label+'</span><div class="ps-bar-wrap"><div class="ps-bar" style="width:'+pct+'%;background:'+col+'"></div></div><span class="ps-val">'+val.toFixed(1)+'</span></div>';
 }
 function styleDesc(h){
-const erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl),fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
+var erl=(h.pstyerl !== null && h.pstyerl !== undefined ? h.pstyerl : h.pallstyerl),fin=(h.pstyfin !== null && h.pstyfin !== undefined ? h.pstyfin : h.pallstyfin);
 if(!erl||!fin)return'No data';
 if(erl<=2&&fin<=4)return'Pure front runner';
 if(erl<=3&&fin<=5)return'Pace presser';
@@ -1458,7 +1443,7 @@ if(erl>=5&&fin>=5)return'Comes from behind';
 if(erl>=7)return'Deep closer';
 return styleLabel(erl).label;
 }
-function trkName(c){const m={CD:'Churchill Downs',SA:'Santa Anita',BEL:'Belmont Park',AQU:'Aqueduct',KEE:'Keeneland',GP:'Gulfstream Park',DMR:'Del Mar',PIM:'Pimlico',FG:'Fair Grounds',TAM:'Tampa Bay Downs',OP:'Oaklawn Park',PRX:'Parx Racing',MTH:'Monmouth Park',TDN:'Thistledown',MNR:'Mountaineer',HAW:'Hawthorne',LRL:'Laurel Park',DEL:'Delaware Park',IND:'Indiana Grand',CBY:'Canterbury Park',ALB:'Albuquerque',BTP:'Belterra Park',CT:'Charles Town',CTM:'Century Mile',DED:'Delta Downs',EDR:'Energy Downs',EMD:'Emerald Downs'};return m[c]||c+' Raceway';}
+function trkName(c){var m={CD:'Churchill Downs',SA:'Santa Anita',BEL:'Belmont Park',AQU:'Aqueduct',KEE:'Keeneland',GP:'Gulfstream Park',DMR:'Del Mar',PIM:'Pimlico',FG:'Fair Grounds',TAM:'Tampa Bay Downs',OP:'Oaklawn Park',PRX:'Parx Racing',MTH:'Monmouth Park',TDN:'Thistledown',MNR:'Mountaineer',HAW:'Hawthorne',LRL:'Laurel Park',DEL:'Delaware Park',IND:'Indiana Grand',CBY:'Canterbury Park',ALB:'Albuquerque',BTP:'Belterra Park',CT:'Charles Town',CTM:'Century Mile',DED:'Delta Downs',EDR:'Energy Downs',EMD:'Emerald Downs'};return m[c]||c+' Raceway';}
 function fmtDate(d){if(d.length===8)return d.slice(4,6)+'/'+d.slice(6,8)+'/'+d.slice(0,4);return d;}
 </script>
 </body>
