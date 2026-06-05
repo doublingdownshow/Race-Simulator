@@ -494,7 +494,7 @@ var commPos=(comm.match(/\[\+\]/g)||[]).length;
 var commNeg=(comm.match(/\[-\]/g)||[]).length;
 var commScore=commPos-commNeg;
 // FTS: sire data
-var sireEl=he.querySelector(':scope > sire');
+var sireEl=he.querySelector('sire');
 var sireFTSW=0,sireFTSS=0,studFee=0,sireName='';
 if(sireEl){
   var snEl=sireEl.querySelector('sirename'); sireName=snEl?snEl.textContent.trim():'';
@@ -509,7 +509,7 @@ if(sireEl){
 }
 // FTS: trainer FTS stats
 var trnrFTSW=0,trnrFTSS=0;
-var tEl2=he.querySelector(':scope > trainer');
+var tEl2=he.querySelector('trainer');
 if(tEl2){tEl2.querySelectorAll('stats_data > stat').forEach(function(s){
   if(s.getAttribute('type')==='FIRST_TIME'){
     var stEl=s.querySelector('starts'); var wiEl=s.querySelector('wins');
@@ -519,9 +519,9 @@ if(tEl2){tEl2.querySelectorAll('stats_data > stat').forEach(function(s){
 });}
 // FTS: workouts
 var workouts=[];
-he.querySelectorAll(':scope > workoutdata').forEach(function(w){
+he.querySelectorAll('workoutdata').forEach(function(w){
   var wtEl=w.querySelector('worktext');var txt=wtEl?wtEl.textContent.trim():'';
-  var db=parseInt(w.querySelector('days_back')?function(){var e=document.createElement('x');e.textContent='999';return e}():document.createElement('x'));
+  var dbEl=w.querySelector('days_back');var db=dbEl?parseInt(dbEl.textContent)||999:999;
   workouts.push({txt:txt,daysBack:db});
 });
 race.horses.push({
