@@ -731,7 +731,7 @@ renderTrackTabs();
 var totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
 document.getElementById('trackBadge').textContent=tc;
 document.getElementById('appTitle').textContent=trkName(tc);
-document.getElementById('appSub').textContent=(r0.raceDate?fmtDate(r0.raceDate):'')+' · '+raceData.length+' RACES';
+document.getElementById('appSub').textContent=(r0&&r0.raceDate?fmtDate(r0.raceDate):'')+' · '+raceData.length+' RACES';
 if(totalSc>0){var sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
 buildNav(); selectRace(0);
 }
