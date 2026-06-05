@@ -1183,6 +1183,7 @@ var weights=horses.map(function(h,i){
   var m=paceAnalysis.multipliers[i];
   return(isNaN(w)||!isFinite(w))?0.001:w*(isNaN(m)||!isFinite(m)?1:m);
 });
+  console.log('WEIGHTS:', weights, 'HORSES:', horses.map(function(h){return {name:h.name,lts:h.lts,ftsAvg:h._ftsFieldAvg};}));
 var n=horses.length;
 var wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
 var exacta={},trifecta={};
