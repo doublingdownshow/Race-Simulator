@@ -310,8 +310,8 @@ scratchRow.style.display = 'none';
 strip.style.display = 'none';
 }
 }
-window.addEventListener('DOMContentLoaded', () => {
-setTimeout(() => {
+window.addEventListener('DOMContentLoaded', function() {
+setTimeout(function() {
 try { loadWeights(); } catch(e) {}
 try { refreshCacheStrip(); } catch(e) {}
 try { loadTrackStore(); } catch(e) {}
@@ -335,7 +335,7 @@ if (Object.keys(trackStore).length > 0) {
   document.getElementById('trackBadge').textContent=tc;
   document.getElementById('appTitle').textContent=trkName(tc);
   document.getElementById('appSub').textContent=raceData.length+' RACES';
-  var totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+  var totalSc=raceData.reduce(function(s,r){return s+(r?r.horses.filter(function(h){return h.scratched;}).length:0);},0);
   if(totalSc>0){var sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
   buildNav(); selectRace(0);
 } else if (mainXML) {
@@ -581,7 +581,7 @@ if(!raceData.length)return;
 var tc=(raceData[0] && raceData[0].track ? raceData[0].track.trim() : '') || '';
 raceData.forEach(race=>{
 race.horses.forEach(h=>{h.scratched=false;h.scratchReason='';h.changes=[];h.jn=h.jnOrig;});
-var rc=scratchData[tc] ? scratchData[tc][race.race] : null;
+var rc=(scratchData[tc]&&race&&race.race) ? scratchData[tc][race.race] : null;
 if(!rc)return;
 rc.scratched.forEach(sc=>{
 var h=race.horses.find(h=>h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase());
@@ -656,7 +656,7 @@ function renderTrackTabs() {
     btn.onclick = () => switchToTrack(code);
     // Long press to remove
     var pressTimer;
-    btn.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { if(confirm('Remove '+code+'?')) removeTrack(code); }, 600); });
+    btn.addEventListener('touchstart', () => { pressTimer = setTimeout(function() { if(confirm('Remove '+code+'?')) removeTrack(code); }, 600); });
     btn.addEventListener('touchend', () => clearTimeout(pressTimer));
     list.appendChild(btn);
   });
@@ -676,7 +676,7 @@ function switchToTrack(code) {
   document.getElementById('trackBadge').textContent = code;
   document.getElementById('appTitle').textContent = trkName(code);
   document.getElementById('appSub').textContent = trackStore[code].loadedAt + ' · ' + raceData.length + ' RACES';
-  var totalSc = raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+  var totalSc = raceData.reduce(function(s,r){return s+(r?r.horses.filter(function(h){return h.scratched;}).length:0);},0);
   var sb = document.getElementById('scBadge');
   if (totalSc > 0) { sb.style.display='inline-block'; sb.textContent='✂ '+totalSc+' SCRATCHES'; }
   else { sb.style.display='none'; }
@@ -728,7 +728,7 @@ currentTrack = tc;
 document.getElementById('uploadScreen').style.display='none';
 document.getElementById('appScreen').style.display='block';
 renderTrackTabs();
-var totalSc=raceData.reduce((s,r)=>s+r.horses.filter(h=>h.scratched).length,0);
+var totalSc=raceData.reduce(function(s,r){return s+(r?r.horses.filter(function(h){return h.scratched;}).length:0);},0);
 document.getElementById('trackBadge').textContent=tc;
 document.getElementById('appTitle').textContent=trkName(tc);
 document.getElementById('appSub').textContent=(r0&&r0.raceDate?fmtDate(r0.raceDate):'')+' · '+raceData.length+' RACES';
@@ -757,15 +757,16 @@ raceData.forEach((r,i)=>{
 var sc=r.horses.filter(h=>h.scratched).length;
 var btn=document.createElement('button');btn.className='race-btn';
 btn.innerHTML='R'+r.race+(sc?'<span class="sdot" title="'+sc+' scratched"></span>':'');
-btn.onclick=()=>selectRace(i);nav.appendChild(btn);
+btn.onclick=function(){selectRace(i);};nav.appendChild(btn);
 });
 }
 function selectRace(idx) {
 currentRace=idx;simResults=null;
-document.querySelectorAll('.race-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+document.querySelectorAll('.race-btn').forEach(function(b,i){b.classList.toggle('active',i===idx);});
 var r=raceData[idx];
+if(!r)return;
 document.getElementById('raceTitle').textContent='Race '+r.race;
-var act=r.horses.filter(h=>!h.scratched), sc=r.horses.filter(h=>h.scratched);
+var act=r.horses.filter(function(h){return !h.scratched;}), sc=r.horses.filter(function(h){return h.scratched;});
 var sf=r.surface==='T'?'mp-turf':'mp-dirt', sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
 document.getElementById('raceMeta').innerHTML='\n<span class="mp mp-d">'+(r.dist||'?')+'</span>\n<span class="mp '+(sf)+'">'+(sl)+'</span>\n'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+'\n<span class="mp mp-n">'+(act.length)+' ACTIVE</span>\n'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'')+'\n';
 var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
