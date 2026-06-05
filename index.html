@@ -562,9 +562,13 @@ re.querySelectorAll('start_changes > horse').forEach(he=>{
 var hn=he.getAttribute('horse_name')||'', pp=he.getAttribute('program_number')||'';
 var isSc=false,scr='';
 he.querySelectorAll('change').forEach(ce=>{
-var desc=ce.querySelector('change_description') ? el.textContent.trim() : "";
-var nv=ce.querySelector('new_value') ? el.textContent.trim() : "";
-var ov=ce.querySelector('old_value') ? el.textContent.trim() : "";
+  var descEl = ce.querySelector('change_description');
+  var nvEl   = ce.querySelector('new_value');
+  var ovEl   = ce.querySelector('old_value');
+
+  var desc = descEl ? descEl.textContent.trim() : "";
+  var nv   = nvEl ? nvEl.textContent.trim() : "";
+  var ov   = ovEl ? ovEl.textContent.trim() : "";
 if(desc==='Scratched'&&nv==='Y')isSc=true;
 else if(desc==='Scratch Reason'&&nv&&nv!=='Reason Unavailable')scr=nv;
 else if(desc==='Jockey'&&nv)ri.changes.push({horse:hn,pp,type:'JOCKEY',old:ov,new:nv});
