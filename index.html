@@ -471,7 +471,7 @@ const gt=function(t){var el=re.querySelector(':scope > '+t);return el?el.textCon
 const race={race:gt('race'),dist:gt('dist_disp')||gt('distance'),surface:gt('surface'),purse:gt('purse'),track:gt('track'),raceDate:gt('race_date'),horses:[]};
 re.querySelectorAll(':scope > horsedata').forEach(he=>{
 const hg=function(t){var el=he.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
-const n=v=>(v&&v!=='NA'&&v!=='')? parseFloat(v):null;
+const n=v=>{var f=parseFloat(v);return(!isNaN(f)&&v&&v!=='NA'&&v!==''&&f!==0)?f:null;};
 let jn='',jw=0,js=0;
 const jel=he.querySelector(':scope > jockey');
 if(jel){var jd=jel.querySelector('jock_disp');jn=jd?jd.textContent.trim():'';jel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){js=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());jw=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());}});}
@@ -530,6 +530,7 @@ power:n(hg('power')), avgSpd:n(hg('avgspd')||hg('avg_spd_sd')),
 hiSpd:n(hg('hi_spd_sd')),
 avgcls:n(hg('avgcls')), avpurval:n(hg('av_pur_val')),
 pfigerl:n(hg('pfigerl')), pfigmid:n(hg('pfigmid')), pfigfin:n(hg('pfigfin')),
+pallfigerl:n(hg('pallfigerl')), pallfigmid:n(hg('pallfigmid')), pallfigfin:n(hg('pallfigfin')),
 pstyerl:n(hg('pstyerl')), pstymid:n(hg('pstymid')), pstyfin:n(hg('pstyfin')),
 pallstyerl:n(hg('pallstyerl')), pallstymid:n(hg('pallstymid')), pallstyfin:n(hg('pallstyfin')),
 med:hg('med')||'N', equip:hg('equip')||'', weight:n(hg('weight')), wghtShift:n(hg('wght_shift')),
