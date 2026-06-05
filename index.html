@@ -474,18 +474,18 @@ const hg=function(t){var el=he.querySelector(':scope > '+t);return el?el.textCon
 const n=v=>{var f=parseFloat(v);return(!isNaN(f)&&v&&v!=='NA'&&v!==''&&f!==0)?f:null;};
 let jn='',jw=0,js=0;
 const jel=he.querySelector(':scope > jockey');
-if(jel){var jd=jel.querySelector('jock_disp');jn=jd?jd.textContent.trim():'';jel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){js=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());jw=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());}});}
+if(jel){var jd=jel.querySelector('jock_disp');jn=jd?jd.textContent.trim():'';jel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){js=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();jw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});}
 let tn='',tw=0,ts=0;
 const tel=he.querySelector(':scope > trainer');
-if(tel){var td2=tel.querySelector('tran_disp');tn=td2?td2.textContent.trim():'';tel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){ts=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());tw=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());}});}
+if(tel){var td2=tel.querySelector('tran_disp');tn=td2?td2.textContent.trim():'';tel.querySelectorAll('stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LAST30'){ts=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();tw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});}
 let ltw=0,lts=0;
-he.querySelectorAll(':scope > stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LIFETIME'){lts=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());ltw=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());}});
+he.querySelectorAll(':scope > stats_data > stat').forEach(s=>{if(s.getAttribute('type')==='LIFETIME'){lts=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();ltw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();}});
 let tdsW=0,tdsS=0;
 const TDS_TYPES=['AT_TRK_CRS','DIST_SURF','AT_DST_CRS','AT_TRKSURF'];
 he.querySelectorAll(':scope > stats_data > stat').forEach(s=>{
 if(TDS_TYPES.includes(s.getAttribute('type'))){
-const ss=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());
-const sw=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());
+const ss=(function(){var e=s.querySelector('starts');return e?parseInt(e.textContent)||0:0;})();
+const sw=(function(){var e=s.querySelector('wins');return e?parseInt(e.textContent)||0:0;})();
 if(ss>tdsS){tdsS=ss;tdsW=sw;}
 }
 });
@@ -497,12 +497,13 @@ const commScore=commPos-commNeg;
 var sireEl=he.querySelector(':scope > sire');
 var sireFTSW=0,sireFTSS=0,studFee=0,sireName='';
 if(sireEl){
-  var sn2=sireEl.querySelector('sirename');sireName=sn2?sn2.textContent.trim():'';
-  studFee=parseFloat(sireEl.querySelector('stud_fee')?function(){var e=document.createElement('x');e.textContent='0';return e}():document.createElement('x'))||0;
+  var snEl=sireEl.querySelector('sirename'); sireName=snEl?snEl.textContent.trim():'';
+  var sfEl=sireEl.querySelector('stud_fee'); studFee=sfEl?parseFloat(sfEl.textContent)||0:0;
   sireEl.querySelectorAll('stats_data > stat').forEach(function(s){
     if(s.getAttribute('type')==='FIRST_TIME'){
-      sireFTSS=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());
-      sireFTSW=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());
+      var stEl=s.querySelector('starts'); var wiEl=s.querySelector('wins');
+      sireFTSS=parseInt(stEl?stEl.textContent:'0')||0;
+      sireFTSW=parseInt(wiEl?wiEl.textContent:'0')||0;
     }
   });
 }
@@ -511,8 +512,9 @@ var trnrFTSW=0,trnrFTSS=0;
 var tEl2=he.querySelector(':scope > trainer');
 if(tEl2){tEl2.querySelectorAll('stats_data > stat').forEach(function(s){
   if(s.getAttribute('type')==='FIRST_TIME'){
-    trnrFTSS=parseInt(function(){var e=s.querySelector('starts');return e?e.textContent:'0'}());
-    trnrFTSW=parseInt(function(){var e=s.querySelector('wins');return e?e.textContent:'0'}());
+    var stEl=s.querySelector('starts'); var wiEl=s.querySelector('wins');
+    trnrFTSS=parseInt(stEl?stEl.textContent:'0')||0;
+    trnrFTSW=parseInt(wiEl?wiEl.textContent:'0')||0;
   }
 });}
 // FTS: workouts
@@ -1224,8 +1226,8 @@ card.innerHTML=`
 <div class="style-bar">${pipHtml}<span class="style-label">${styleDesc(top)}</span></div>
 <div class="pstats">
 <div class="pstat"><span class="val">${top[sk]}%</span><span class="lbl">${vl} RATE</span></div>
-<div class="pstat"><span class="val">${top.pfigfin || ')—'}</span><span class="lbl">FIN PACE FIG</span></div>
-<div class="pstat"><span class="val">${top.avgcls || ')—'}</span><span class="lbl">AVG CLASS</span></div>
+<div class="pstat"><span class="val">${top.pfigfin || '—'}</span><span class="lbl">FIN PACE FIG</span></div>
+<div class="pstat"><span class="val">${top.avgcls || '—'}</span><span class="lbl">AVG CLASS</span></div>
 </div>`;
 pg.appendChild(card);
 });
