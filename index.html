@@ -1159,51 +1159,63 @@ av.splice(av.findIndex(a=>a.h===no[0].h),1);
 }
 return res;
 }
-async function runSim(){
-const btn=document.getElementById('runBtn');btn.disabled=true;
+function runSim(){
+var btn=document.getElementById('runBtn'); btn.disabled=true;
 document.getElementById('placeholder').style.display='none';
 document.getElementById('results').style.display='none';
 document.getElementById('progWrap').style.display='block';
-const race=raceData[currentRace];
-const horses=race.horses.filter(h=>!h.scratched);
+var race=raceData[currentRace];
+var horses=race.horses.filter(function(h){return !h.scratched;});
 var paceAnalysis;
-try { paceAnalysis = analyzePaceScenario(horses); } 
-catch(e) { showStatus('Pace analysis error: '+e.message, true); paceAnalysis = {multipliers: horses.map(function(){return 1;}), scenario:'HONEST_PACE', scenarioDesc:'', scenarioColor:'#5888b0', numSpeed:0, numClosers:0, avgErl:5, speedHorses:[], horseNotes:[]}; }
-// Compute field average from experienced horses for FTS relative scoring
-var expH = horses.filter(function(h){return h.lts > 2;});
-var fieldAvg = expH.length > 0
-  ? expH.map(function(h){return computeWeight(h);}).reduce(function(s,w){return s+w;},0) / expH.length
-  : 0.38;
-horses.forEach(function(h){ if(h.lts <= 2) h._ftsFieldAvg = fieldAvg; });
-const weights=horses.map(function(h,i){
-  var w = computeWeight(h);
-  var m = paceAnalysis.multipliers[i];
-  return (isNaN(w) || !isFinite(w)) ? 0.001 : w * (isNaN(m) || !isFinite(m) ? 1 : m);
+try { paceAnalysis=analyzePaceScenario(horses); }
+catch(e){ showStatus('Pace error: '+e.message,true); paceAnalysis={multipliers:horses.map(function(){return 1;}),scenario:'HONEST_PACE',scenarioDesc:'',scenarioColor:'#5888b0',numSpeed:0,numClosers:0,avgErl:5,speedHorses:[],horseNotes:[]}; }
+var expH=horses.filter(function(h){return h.lts>2;});
+var fieldAvg=expH.length>0?expH.map(function(h){return computeWeight(h);}).reduce(function(s,w){return s+w;},0)/expH.length:0.38;
+horses.forEach(function(h){if(h.lts<=2)h._ftsFieldAvg=fieldAvg;});
+var weights=horses.map(function(h,i){
+  var w=computeWeight(h);
+  var m=paceAnalysis.multipliers[i];
+  return(isNaN(w)||!isFinite(w))?0.001:w*(isNaN(m)||!isFinite(m)?1:m);
 });
-const n=horses.length;
-const wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
-const exacta={},trifecta={};
-const TOTAL=1000,CHUNK=50;
-for(var i=0;i<TOTAL;i+=CHUNK){
-for(var j=0;j<CHUNK&&(i+j)<TOTAL;j++){
-const ord=weightedSample(horses,weights);
-wins[horses.indexOf(ord[0])]++;
-places[horses.indexOf(ord[1])]++;
-if(n>2){shows[horses.indexOf(ord[2])]++;const tk=`${ord[0].pp}-${ord[1].pp}-${ord[2].pp}`;trifecta[tk]=(trifecta[tk]||0)+1;}
-const ek=`${ord[0].pp}-${ord[1].pp}`;exacta[ek]=(exacta[ek]||0)+1;
+var n=horses.length;
+var wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
+var exacta={},trifecta={};
+var TOTAL=1000,CHUNK=50,simI=0;
+function runChunk(){
+  var limit=Math.min(simI+CHUNK,TOTAL);
+  for(var j=simI;j<limit;j++){
+    var ord=weightedSample(horses,weights);
+    wins[horses.indexOf(ord[0])]++;
+    places[horses.indexOf(ord[1])]++;
+    if(n>2){
+      shows[horses.indexOf(ord[2])]++;
+      var tk=ord[0].pp+'-'+ord[1].pp+'-'+ord[2].pp;
+      trifecta[tk]=(trifecta[tk]||0)+1;
+    }
+    var ek=ord[0].pp+'-'+ord[1].pp;
+    exacta[ek]=(exacta[ek]||0)+1;
+  }
+  simI=limit;
+  var pct=Math.min(Math.round((simI/TOTAL)*100),100);
+  document.getElementById('progBar').style.width=pct+'%';
+  document.getElementById('progLbl').textContent='SIMULATING... '+simI+' / '+TOTAL;
+  if(simI<TOTAL){
+    setTimeout(runChunk,0);
+  } else {
+    simResults={wins:wins,places:places,shows:shows,exacta:exacta,trifecta:trifecta,TOTAL:TOTAL,weights:weights,horses:horses,paceAnalysis:paceAnalysis};
+    document.getElementById('progWrap').style.display='none';
+    renderResults();
+    btn.disabled=false;
+  }
 }
-const pct=Math.min(Math.round(((i+CHUNK)/TOTAL)*100),100);
-document.getElementById('progBar').style.width=pct+'%';
-document.getElementById('progLbl').textContent='SIMULATING... '+Math.min(i+CHUNK,TOTAL)+' / '+TOTAL;
-await new Promise(r=>setTimeout(r,0));
+setTimeout(runChunk,0);
 }
-simResults={wins,places,shows,exacta,trifecta,TOTAL,weights,horses,paceAnalysis};
-document.getElementById('progWrap').style.display='none';
-renderResults();btn.disabled=false;
-}
+
 function renderResults(){
 const race=raceData[currentRace];
-const {wins,places,shows,exacta,trifecta,TOTAL,weights,horses,paceAnalysis}=simResults;
+var wins=simResults.wins,places=simResults.places,shows=simResults.shows;
+var exacta=simResults.exacta,trifecta=simResults.trifecta,TOTAL=simResults.TOTAL;
+var weights=simResults.weights,horses=simResults.horses,paceAnalysis=simResults.paceAnalysis;
 const ranked=horses.map(function(h,i){
 var r=Object.assign({},h);
 r.winPct=+(wins[i]/TOTAL*100).toFixed(1);
@@ -1250,14 +1262,14 @@ tbody.appendChild(tr);
 });
 const el=document.getElementById('exactaList');el.innerHTML='';
 Object.entries(exacta).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([k,c],i)=>{
-const [p1,p2]=k.split('-'),h1=horses.find(h=>h.pp==p1),h2=horses.find(h=>h.pp==p2);
+var parts=k.split('-'),p1=parts[0],p2=parts[1],h1=horses.find(function(h){return h.pp==p1;}),h2=horses.find(function(h){return h.pp==p2;});
 const d=document.createElement('div');d.className='combo-row';
 d.innerHTML='<span class="cn">'+(i+1)+'.</span><span class="ch">'+(h1?h1.name:p1)+'<span class="ca">→</span>'+(h2?h2.name:p2)+'</span><span class="cpct">'+(c/TOTAL*100).toFixed(1)+'%</span>';
 el.appendChild(d);
 });
 const tl=document.getElementById('trifectaList');tl.innerHTML='';
 Object.entries(trifecta).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([k,c],i)=>{
-const [p1,p2,p3]=k.split('-'),h1=horses.find(h=>h.pp==p1),h2=horses.find(h=>h.pp==p2),h3=horses.find(h=>h.pp==p3);
+var parts2=k.split('-'),p1=parts2[0],p2=parts2[1],p3=parts2[2],h1=horses.find(function(h){return h.pp==p1;}),h2=horses.find(function(h){return h.pp==p2;}),h3=horses.find(h=>h.pp==p3);
 const d=document.createElement('div');d.className='combo-row';
 d.innerHTML='<span class="cn">'+(i+1)+'.</span><span class="ch" style="font-size:9px">'+(h1?h1.name:p1)+'<span class="ca">→</span>'+(h2?h2.name:p2)+'<span class="ca">→</span>'+(h3?h3.name:p3)+'</span><span class="cpct">'+(c/TOTAL*100).toFixed(1)+'%</span>';
 tl.appendChild(d);
