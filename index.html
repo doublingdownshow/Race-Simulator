@@ -579,16 +579,17 @@ scratchData[tid][rn]=ri;
 function applyScratches() {
 if(!raceData.length)return;
 var tc=(raceData[0] && raceData[0].track ? raceData[0].track.trim() : '') || '';
-raceData.forEach(race=>{
-race.horses.forEach(h=>{h.scratched=false;h.scratchReason='';h.changes=[];h.jn=h.jnOrig;});
+raceData.forEach(function(race){
+if(!race||!race.horses)return;
+race.horses.forEach(function(h){h.scratched=false;h.scratchReason='';h.changes=[];h.jn=h.jnOrig;});
 var rc=(scratchData[tc]&&race&&race.race) ? scratchData[tc][race.race] : null;
 if(!rc)return;
-rc.scratched.forEach(sc=>{
-var h=race.horses.find(h=>h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase());
+rc.scratched.forEach(function(sc){
+var h=race.horses.find(function(h){return h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase();});
 if(h){h.scratched=true;h.scratchReason=sc.reason||'Scratched';}
 });
-rc.changes.forEach(chg=>{
-var h=race.horses.find(h=>h.pp==chg.pp||h.name.toLowerCase()===chg.horse.toLowerCase());
+rc.changes.forEach(function(chg){
+var h=race.horses.find(function(h){return h.pp==chg.pp||h.name.toLowerCase()===chg.horse.toLowerCase();});
 if(h){if(chg.type==='JOCKEY')h.jn=chg.new;h.changes.push(chg);}
 });
 });
@@ -754,7 +755,7 @@ if (sxml) { try { parseScratch(sxml); } catch(e){} }
 function buildNav() {
 var nav=document.getElementById('raceNav');nav.innerHTML='';
 raceData.forEach((r,i)=>{
-var sc=r.horses.filter(h=>h.scratched).length;
+var sc=r&&r.horses?r.horses.filter(function(h){return h.scratched;}).length:0;
 var btn=document.createElement('button');btn.className='race-btn';
 btn.innerHTML='R'+r.race+(sc?'<span class="sdot" title="'+sc+' scratched"></span>':'');
 btn.onclick=function(){selectRace(i);};nav.appendChild(btn);
@@ -771,7 +772,7 @@ var sf=r.surface==='T'?'mp-turf':'mp-dirt', sl=r.surface==='T'?'TURF':r.surface=
 document.getElementById('raceMeta').innerHTML='\n<span class="mp mp-d">'+(r.dist||'?')+'</span>\n<span class="mp '+(sf)+'">'+(sl)+'</span>\n'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+'\n<span class="mp mp-n">'+(act.length)+' ACTIVE</span>\n'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'')+'\n';
 var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
 if(sc.length){sl2.innerHTML=sc.map(function(h){return '<span class="sc-tag">PP'+h.pp+' '+h.name+(h.scratchReason?' · '+h.scratchReason:'')+'</span>';}).join('');sa.style.display='block';}else sa.style.display='none';
-var allChg=r.horses.filter(h=>!h.scratched&&h.changes.length>0);
+var allChg=r&&r.horses?r.horses.filter(function(h){return !h.scratched&&h.changes&&h.changes.length>0;}):[];
 var ca=document.getElementById('chgAlert'),cl=document.getElementById('chgList');
 if(allChg.length){cl.innerHTML=allChg.flatMap(h=>h.changes.map(function(c){return '<span class="chg-tag">PP'+h.pp+' '+h.name+': '+c.type+' → '+c.new+'</span>';})).join('');ca.style.display='block';}else ca.style.display='none';
 document.getElementById('placeholder').style.display='block';
@@ -1160,6 +1161,7 @@ document.getElementById('placeholder').style.display='none';
 document.getElementById('results').style.display='none';
 document.getElementById('progWrap').style.display='block';
 var race=raceData[currentRace];
+if(!race||!race.horses){showStatus('No race data',true);return;}
 var horses=race.horses.filter(function(h){return !h.scratched;});
 var paceAnalysis;
 try { paceAnalysis=analyzePaceScenario(horses); }
@@ -1208,6 +1210,7 @@ setTimeout(runChunk,0);
 
 function renderResults(){
 var race=raceData[currentRace];
+if(!race||!race.horses){showStatus('No race data available',true);return;}
 var wins=simResults.wins,places=simResults.places,shows=simResults.shows;
 var exacta=simResults.exacta,trifecta=simResults.trifecta,TOTAL=simResults.TOTAL;
 var weights=simResults.weights,horses=simResults.horses,paceAnalysis=simResults.paceAnalysis;
@@ -1232,7 +1235,7 @@ pg.appendChild(card);
 renderPaceScenario(paceAnalysis, horses, ranked);
 var tbody=document.getElementById('winTbody');tbody.innerHTML='';
 var rk=1;
-ranked.concat(race.horses.filter(function(h){return h.scratched;})).forEach(h=>{
+ranked.concat(race&&race.horses?race.horses.filter(function(h){return h.scratched;}):[]).forEach(function(h){
 var isSc=h.scratched;
 var tr=document.createElement('tr');if(isSc)tr.className='sr';
 var st=styleLabel(getStyle(h));
@@ -1262,7 +1265,7 @@ tl.appendChild(d);
 });
 var dt=document.getElementById('dtbody');dt.innerHTML='';
 var totW=weights.reduce((s,w)=>s+w,0);
-race.horses.forEach(h=>{
+(race&&race.horses?race.horses:[]).forEach(function(h){
 var isSc=h.scratched,idx=horses.indexOf(h);
 var jr=h.js>0?(h.jw/h.js*100).toFixed(0)+'%':'—';
 var tr2=h.ts>0?(h.tw/h.ts*100).toFixed(0)+'%':'—';
