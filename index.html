@@ -618,7 +618,7 @@ function loadTrackStore() {
           raceData = rd;
           parseMain(xml);
           trackStore[entry.code] = {
-            raceData: [...raceData], xml,
+            raceData: raceData.slice(), xml,
             filename: entry.filename, loadedAt: entry.loadedAt
           };
           raceData = saved;
@@ -706,7 +706,7 @@ function handleExtraTrack(file) {
       const saved = raceData;
       raceData = [];
       parseMain(txt);
-      const newRaceData = [...raceData];
+      const newRaceData = raceData.slice();
       raceData = saved;
       addTrackToStore(txt, file.name, newRaceData);
       showStatus('✅ ' + file.name + ' added — ' + newRaceData.length + ' races');
@@ -720,7 +720,7 @@ function startApp() {
 applyScratches();
 const r0=raceData[0], tc=(r0 && r0.track ? r0.track.trim() : '')||'TRK';
 // Add to multi-track store
-trackStore[tc] = { raceData:[...raceData], xml: safeLS('get',LS_MAIN)||'', filename: safeLS('get',LS_MAIN_N)||tc+'.xml', loadedAt: new Date().toLocaleString() };
+trackStore[tc] = { raceData:raceData.slice(), xml: safeLS('get',LS_MAIN)||'', filename: safeLS('get',LS_MAIN_N)||tc+'.xml', loadedAt: new Date().toLocaleString() };
 saveTrackStore();
 currentTrack = tc;
 document.getElementById('uploadScreen').style.display='none';
@@ -804,7 +804,12 @@ else if (erl <= 5.5)  styleBucket = 'STALKER';
 else if (erl <= 7.0)  styleBucket = 'CLOSER';
 else                  styleBucket = 'DEEP';
 }
-return { ...h, erl, mid, fin, pfe, pfm, pff, paceFade, styleBucket, hasStyle };
+var classified_h = Object.assign({}, h);
+classified_h.erl = erl; classified_h.mid = mid; classified_h.fin = fin;
+classified_h.pfe = pfe; classified_h.pfm = pfm; classified_h.pff = pff;
+classified_h.paceFade = paceFade; classified_h.styleBucket = styleBucket;
+classified_h.hasStyle = hasStyle;
+return classified_h;
 });
 const withStyle = classified.filter(h => h.hasStyle && h.erl > 0);
 const speedHorses  = withStyle.filter(h => h.erl <= 3.0);
@@ -816,7 +821,7 @@ const numClosers  = closers.length;
 const avgErl      = withStyle.length > 0
 ? withStyle.reduce((s,h)=>s+h.erl,0)/withStyle.length : 5.0;
 const paceSetterPF = withStyle.length > 0
-? Math.max(...withStyle.filter(h=>h.pfe).map(h=>h.pfe))
+? Math.max.apply(null, withStyle.filter(function(h){return h.pfe;}).map(function(h){return h.pfe;}))
 : null;
 let scenario, scenarioDesc, scenarioColor;
 if (numSpeed === 0) {
@@ -1145,7 +1150,7 @@ return Math.max(base + lasixBonus + equipBonus - wtPenalty, 0.001);
 }
 function weightedSample(horses,weights){
 const av=horses.map((h,i)=>({h,w:weights[i]}));const res=[];
-for(let k=0;k<horses.length;k++){
+for(var k=0;k<horses.length;k++){
 const no=av.map(a=>({h:a.h,score:a.w*(1+(Math.random()-.5)*.28)}));
 no.sort((a,b)=>b.score-a.score);res.push(no[0].h);
 av.splice(av.findIndex(a=>a.h===no[0].h),1);
@@ -1159,20 +1164,26 @@ document.getElementById('results').style.display='none';
 document.getElementById('progWrap').style.display='block';
 const race=raceData[currentRace];
 const horses=race.horses.filter(h=>!h.scratched);
-const paceAnalysis = analyzePaceScenario(horses);
+var paceAnalysis;
+try { paceAnalysis = analyzePaceScenario(horses); } 
+catch(e) { showStatus('Pace analysis error: '+e.message, true); paceAnalysis = {multipliers: horses.map(function(){return 1;}), scenario:'HONEST_PACE', scenarioDesc:'', scenarioColor:'#5888b0', numSpeed:0, numClosers:0, avgErl:5, speedHorses:[], horseNotes:[]}; }
 // Compute field average from experienced horses for FTS relative scoring
 var expH = horses.filter(function(h){return h.lts > 2;});
 var fieldAvg = expH.length > 0
   ? expH.map(function(h){return computeWeight(h);}).reduce(function(s,w){return s+w;},0) / expH.length
   : 0.38;
 horses.forEach(function(h){ if(h.lts <= 2) h._ftsFieldAvg = fieldAvg; });
-const weights=horses.map((h,i)=>computeWeight(h) * paceAnalysis.multipliers[i]);
+const weights=horses.map(function(h,i){
+  var w = computeWeight(h);
+  var m = paceAnalysis.multipliers[i];
+  return (isNaN(w) || !isFinite(w)) ? 0.001 : w * (isNaN(m) || !isFinite(m) ? 1 : m);
+});
 const n=horses.length;
 const wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
 const exacta={},trifecta={};
 const TOTAL=1000,CHUNK=50;
-for(let i=0;i<TOTAL;i+=CHUNK){
-for(let j=0;j<CHUNK&&(i+j)<TOTAL;j++){
+for(var i=0;i<TOTAL;i+=CHUNK){
+for(var j=0;j<CHUNK&&(i+j)<TOTAL;j++){
 const ord=weightedSample(horses,weights);
 wins[horses.indexOf(ord[0])]++;
 places[horses.indexOf(ord[1])]++;
@@ -1181,7 +1192,7 @@ const ek=`${ord[0].pp}-${ord[1].pp}`;exacta[ek]=(exacta[ek]||0)+1;
 }
 const pct=Math.min(Math.round(((i+CHUNK)/TOTAL)*100),100);
 document.getElementById('progBar').style.width=pct+'%';
-document.getElementById('progLbl').textContent=`SIMULATING... ${Math.min(i+CHUNK,TOTAL)} / ${TOTAL}`;
+document.getElementById('progLbl').textContent='SIMULATING... '+Math.min(i+CHUNK,TOTAL)+' / '+TOTAL;
 await new Promise(r=>setTimeout(r,0));
 }
 simResults={wins,places,shows,exacta,trifecta,TOTAL,weights,horses,paceAnalysis};
@@ -1191,11 +1202,18 @@ renderResults();btn.disabled=false;
 function renderResults(){
 const race=raceData[currentRace];
 const {wins,places,shows,exacta,trifecta,TOTAL,weights,horses,paceAnalysis}=simResults;
-const ranked=horses.map((h,i)=>({...h,winPct:+(wins[i]/TOTAL*100).toFixed(1),placePct:+(places[i]/TOTAL*100).toFixed(1),showPct:+(shows[i]/TOTAL*100).toFixed(1),idx:i,fts:analyzeFTS(h)})).sort((a,b)=>b.winPct-a.winPct);
-const maxWin=Math.max(...ranked.map(h=>h.winPct),1);
+const ranked=horses.map(function(h,i){
+var r=Object.assign({},h);
+r.winPct=+(wins[i]/TOTAL*100).toFixed(1);
+r.placePct=+(places[i]/TOTAL*100).toFixed(1);
+r.showPct=+(shows[i]/TOTAL*100).toFixed(1);
+r.idx=i; r.fts=analyzeFTS(h);
+return r;
+}).sort(function(a,b){return b.winPct-a.winPct;});
+const maxWin=Math.max.apply(null,[1].concat(ranked.map(function(h){return h.winPct;})));
 const pg=document.getElementById('picksGrid');pg.innerHTML='';
 [{cls:'pc-w',lbl:'MOST LIKELY WIN',sk:'winPct',vl:'WIN'},{cls:'pc-p',lbl:'MOST LIKELY PLACE',sk:'placePct',vl:'PLACE'},{cls:'pc-s',lbl:'MOST LIKELY SHOW',sk:'showPct',vl:'SHOW'}].forEach(({cls,lbl,sk,vl})=>{
-const top=[...ranked].sort((a,b)=>b[sk]-a[sk])[0];
+const top=ranked.slice().sort((a,b)=>b[sk]-a[sk])[0];
 const st=styleLabel(getStyle(top));
 const card=document.createElement('div');card.className=`pick-card ${cls}`;
 const pipHtml=buildStylePips(top,true);
@@ -1214,7 +1232,7 @@ pg.appendChild(card);
 renderPaceScenario(paceAnalysis, horses, ranked);
 const tbody=document.getElementById('winTbody');tbody.innerHTML='';
 let rk=1;
-[...ranked,...race.horses.filter(h=>h.scratched)].forEach(h=>{
+ranked.concat(race.horses.filter(function(h){return h.scratched;})).forEach(h=>{
 const isSc=h.scratched;
 const tr=document.createElement('tr');if(isSc)tr.className='sr';
 const st=styleLabel(getStyle(h));
