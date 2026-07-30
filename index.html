@@ -1673,7 +1673,7 @@ function runAllAndPrintPublic() {
 }
 
 function _printPublicSheet(allTrackResults) {
-  // ---- STATS CONSTANTS (update from Research Journal after each backfill) ----
+  // ---- STATS CONSTANTS ----
   var STAT_TOP1 = '28%', STAT_TOP3 = '63%', STAT_PUBLIC = '27%', STAT_N = '922';
 
   var html = '';
@@ -1685,21 +1685,28 @@ function _printPublicSheet(allTrackResults) {
   }
 
   // ---- PAGE HEADER ----
-  html += '<div class="pub-masthead">';
-  html += '<div class="pub-masthead-inner">';
-  html += '<div class="pub-logo">DOUBLING DOWN<span class="pub-logo-sub">RACE RANKINGS</span></div>';
-  html += '<div class="pub-masthead-meta">';
-  html += '<div class="pub-masthead-date">' + masterDate + '</div>';
-  html += '<div class="pub-masthead-tracks">';
-  allTrackResults.forEach(function(t) { html += '<span class="pub-track-chip">' + t.code + '</span>'; });
-  html += '</div></div></div>';
-  html += '<div class="pub-stats-bar">';
-  html += '<span class="pub-stat"><span class="pub-stat-val">' + STAT_TOP1 + '</span><span class="pub-stat-lbl">TOP PICK</span></span>';
-  html += '<span class="pub-stat-sep">·</span>';
-  html += '<span class="pub-stat"><span class="pub-stat-val">' + STAT_TOP3 + '</span><span class="pub-stat-lbl">TOP-3</span></span>';
-  html += '<span class="pub-stat-sep">·</span>';
-  html += '<span class="pub-stat"><span class="pub-stat-val">' + STAT_PUBLIC + '</span><span class="pub-stat-lbl">PUBLIC ML FAV</span></span>';
-  html += '<span class="pub-stat-note">Model accuracy · ' + STAT_N + '-race sample · doublingdownshow.com · For entertainment only</span>';
+  html += '<div style="border-bottom:4px solid #1a4a2e;padding:12px 14px 0;background:#fff;width:100%">';
+  html += '<div style="overflow:hidden;margin-bottom:10px">';
+  html += '<div style="float:right;text-align:right">';
+  html += '<div style="font-family:Courier New,monospace;font-size:11px;font-weight:700;color:#1a1a14;margin-bottom:4px">' + masterDate + '</div>';
+  allTrackResults.forEach(function(t) {
+    html += '<span style="font-family:Courier New,monospace;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;background:#1a4a2e;color:#fff;display:inline-block;margin-left:4px">' + t.code + '</span>';
+  });
+  html += '</div>';
+  html += '<div style="font-family:Georgia,serif;font-size:22px;font-weight:900;color:#1a4a2e;line-height:1">';
+  html += 'DOUBLING DOWN';
+  html += '<span style="display:block;font-family:Courier New,monospace;font-size:8px;font-weight:600;letter-spacing:3px;color:#5a8a6a;margin-top:3px">RACE RANKINGS</span>';
+  html += '</div>';
+  html += '<div style="clear:both"></div></div>';
+  // Stats bar
+  html += '<div style="background:#1a4a2e;padding:5px 14px;margin:0 -14px">';
+  html += '<span style="font-family:Courier New,monospace;font-size:12px;font-weight:600;color:#c9f0d8">' + STAT_TOP1 + '</span>';
+  html += '<span style="font-family:Courier New,monospace;font-size:7px;letter-spacing:1px;color:#5a9a6a;text-transform:uppercase;margin-left:3px;margin-right:10px">TOP PICK</span>';
+  html += '<span style="font-family:Courier New,monospace;font-size:12px;font-weight:600;color:#c9f0d8">' + STAT_TOP3 + '</span>';
+  html += '<span style="font-family:Courier New,monospace;font-size:7px;letter-spacing:1px;color:#5a9a6a;text-transform:uppercase;margin-left:3px;margin-right:10px">TOP-3</span>';
+  html += '<span style="font-family:Courier New,monospace;font-size:12px;font-weight:600;color:#7ab09a">' + STAT_PUBLIC + '</span>';
+  html += '<span style="font-family:Courier New,monospace;font-size:7px;letter-spacing:1px;color:#5a9a6a;text-transform:uppercase;margin-left:3px">PUBLIC ML FAV</span>';
+  html += '<span style="float:right;font-family:Courier New,monospace;font-size:7px;color:#4a7a5a">' + STAT_N + '-race sample &middot; doublingdownshow.com &middot; Entertainment only</span>';
   html += '</div></div>';
 
   // ---- PER TRACK / PER RACE ----
@@ -1709,7 +1716,9 @@ function _printPublicSheet(allTrackResults) {
     var sims = trackObj.sims;
 
     if (allTrackResults.length > 1) {
-      html += '<div class="pub-track-header"><span class="pub-track-badge">' + code + '</span>' + label + '</div>';
+      html += '<div style="padding:8px 14px;font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1a4a2e;border-bottom:1px solid #c8e0ce">';
+      html += '<span style="font-family:Courier New,monospace;font-size:9px;font-weight:700;letter-spacing:2px;padding:2px 7px;background:#1a4a2e;color:#fff;margin-right:8px">' + code + '</span>' + label;
+      html += '</div>';
     }
 
     var raceIndices = Object.keys(sims).map(Number).sort(function(a, b) { return a - b; });
@@ -1723,6 +1732,7 @@ function _printPublicSheet(allTrackResults) {
       var wins = res.wins, places = res.places, shows = res.shows;
       var pa = res.paceAnalysis;
       var date = race.raceDate ? fmtDate(race.raceDate) : masterDate;
+      var sf = race.surface === 'T' ? 'Turf' : race.surface === 'D' ? 'Dirt' : (race.surface || '');
 
       var _qW = calibrateProbs(horses.map(function(h, i) { return wins[i] / TOTAL * 100; }));
       var _qP = calibrateProbs(horses.map(function(h, i) { return places[i] / TOTAL * 100; }));
@@ -1735,8 +1745,6 @@ function _printPublicSheet(allTrackResults) {
       }).filter(function(h) { return !h.scratched; })
         .sort(function(a, b) { return b.winPct - a.winPct; });
 
-      var sf = race.surface === 'T' ? 'Turf' : race.surface === 'D' ? 'Dirt' : (race.surface || '');
-
       // VALUE flag
       var valueFlag = false;
       if (ranked.length > 0 && race.surface !== 'T') {
@@ -1745,142 +1753,153 @@ function _printPublicSheet(allTrackResults) {
         if (favH && favH.pp !== ranked[0].pp && impliedPct > 0 && ranked[0].winPct >= 2 * impliedPct) valueFlag = true;
       }
 
-      html += '<div class="pub-race">';
-      html += '<div class="pub-race-head">';
-      html += '<div class="pub-race-num">RACE ' + race.race + '</div>';
-      html += '<div class="pub-race-info">';
-      html += '<div class="pub-race-title">' + label + ' · ' + date + '</div>';
-      html += '<div class="pub-race-meta">' + (race.dist || '') + ' ' + sf + (race.purse ? ' · $' + parseInt(race.purse).toLocaleString() : '') + (race.stkorclm ? ' · ' + race.stkorclm.toUpperCase() : '') + '</div>';
-      html += '</div>';
-      html += '<div class="pub-sim-note">';
-      html += '1,000 SIMULATIONS<br>';
-      html += '<span class="pub-leg" style="color:#c04020">■ E.SPEED</span>';
-      html += '<span class="pub-leg" style="color:#906010">■ PRESSER</span>';
-      html += '<span class="pub-leg" style="color:#3a7010">■ STALKER</span>';
-      html += '<span class="pub-leg" style="color:#0a6a50">■ CLOSER</span>';
-      html += '<span class="pub-leg" style="color:#1a4a8a">■ DEEP</span>';
-      html += '</div></div>';
+      // Pace scenario label + color
+      var paceColors = {LONE_SPEED:'#1a6a40',HOT_PACE:'#8a2010',PACE_DUEL:'#7a5010',NO_SPEED:'#5a5a20',SOFT_PACE:'#2a5a7a',HONEST_PACE:'#3a5a3a'};
+      var paceBgs = {LONE_SPEED:'#eaf7ef',HOT_PACE:'#fdf0ee',PACE_DUEL:'#fdf6ee',NO_SPEED:'#f5f5ea',SOFT_PACE:'#eef5fc',HONEST_PACE:'#eef5ef'};
+      var paceLabels = {LONE_SPEED:'\u2605 LONE SPEED',HOT_PACE:'\uD83D\uDD25 HOT PACE',PACE_DUEL:'\u2694 PACE DUEL',NO_SPEED:'? NO SPEED',SOFT_PACE:'~ SOFT PACE',HONEST_PACE:'\u2713 HONEST PACE'};
+      var sc = pa.scenario;
+      var pclr = paceColors[sc] || '#5a5a5a';
+      var pbg = paceBgs[sc] || '#f5f5f0';
+      var plbl = paceLabels[sc] || sc;
+
+      html += '<div style="padding:8px 14px 0;border-bottom:3px solid #1a4a2e;page-break-inside:avoid">';
+      // Race header row
+      html += '<table style="width:100%;border-collapse:collapse;margin-bottom:5px"><tr>';
+      html += '<td style="font-family:Courier New,monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a4a2e;background:#eaf5ee;border:1px solid #1a4a2e;padding:2px 8px;white-space:nowrap;width:1%">RACE ' + race.race + '</td>';
+      html += '<td style="padding-left:10px">';
+      html += '<div style="font-family:Georgia,serif;font-size:13px;font-weight:700;color:#1a1a14">' + label + ' &middot; ' + date + '</div>';
+      html += '<div style="font-family:Courier New,monospace;font-size:8px;color:#6a7a6a;margin-top:1px">' + (race.dist||'') + ' ' + sf + (race.purse?' &middot; $'+parseInt(race.purse).toLocaleString():'') + (race.stkorclm?' &middot; '+race.stkorclm.toUpperCase():'') + '</div>';
+      html += '</td>';
+      html += '<td style="text-align:right;vertical-align:top;white-space:nowrap">';
+      html += '<div style="font-family:Courier New,monospace;font-size:7px;color:#9aaa9a;letter-spacing:1px;text-transform:uppercase">1,000 SIMULATIONS</div>';
+      html += '<div style="font-size:7px;font-family:Courier New,monospace;margin-top:2px">';
+      html += '<span style="color:#c04020;font-weight:700">&#9632; E.SPEED</span> ';
+      html += '<span style="color:#906010;font-weight:700">&#9632; PRESSER</span> ';
+      html += '<span style="color:#3a7010;font-weight:700">&#9632; STALKER</span> ';
+      html += '<span style="color:#0a6a50;font-weight:700">&#9632; CLOSER</span> ';
+      html += '<span style="color:#1a4a8a;font-weight:700">&#9632; DEEP</span>';
+      html += '</div></td></tr></table>';
 
       // Pace scenario
-      html += '<div class="pub-pace" style="background:' + _pubPaceBg(pa.scenario) + ';border-left:3px solid ' + _pubPaceColor(pa.scenario) + '">';
-      html += '<span class="pub-pace-label" style="color:' + _pubPaceColor(pa.scenario) + '">' + _pubPaceLabel(pa.scenario) + '</span>';
-      html += '<span class="pub-pace-desc">' + _pubPaceDesc(pa) + '</span>';
+      html += '<div style="padding:4px 8px;margin-bottom:6px;border-left:3px solid ' + pclr + ';background:' + pbg + '">';
+      html += '<span style="font-family:Courier New,monospace;font-size:8px;font-weight:700;letter-spacing:1px;color:' + pclr + '">' + plbl + '</span>';
+      html += '<span style="font-family:Arial,sans-serif;font-size:8px;color:#4a5a4a;margin-left:10px">' + _pubPaceDesc(pa) + '</span>';
       html += '</div>';
 
-      // Table
-      html += '<table class="pub-table"><thead><tr>';
-      html += '<th class="pub-th-rk">RK&nbsp;&nbsp;PP</th>';
-      html += '<th>HORSE</th>';
-      html += '<th>JOCKEY</th>';
-      html += '<th>TRAINER</th>';
-      html += '<th class="pub-th-r">M/L</th>';
-      html += '<th class="pub-th-r">FAIR</th>';
-      html += '<th class="pub-th-r">WIN%</th>';
-      html += '<th class="pub-th-r">PL%</th>';
-      html += '<th class="pub-th-r">SH%</th>';
+      // Rankings table — fixed layout with explicit column widths
+      html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px;margin-bottom:6px">';
+      html += '<colgroup>';
+      html += '<col style="width:60px">'; // RK+PP
+      html += '<col style="width:130px">'; // HORSE
+      html += '<col style="width:90px">'; // JOCKEY
+      html += '<col style="width:90px">'; // TRAINER
+      html += '<col style="width:45px">'; // M/L
+      html += '<col style="width:45px">'; // FAIR
+      html += '<col style="width:48px">'; // WIN%
+      html += '<col style="width:38px">'; // PL%
+      html += '<col style="width:38px">'; // SH%
+      html += '</colgroup>';
+      html += '<thead><tr style="background:#1a4a2e">';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:left;font-weight:600;letter-spacing:1px">RK&nbsp;PP</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:left;font-weight:600;letter-spacing:1px">HORSE</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:left;font-weight:600;letter-spacing:1px">JOCKEY</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:left;font-weight:600;letter-spacing:1px">TRAINER</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:right;font-weight:600;letter-spacing:1px">M/L</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:right;font-weight:600;letter-spacing:1px">FAIR</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:right;font-weight:600;letter-spacing:1px">WIN%</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:right;font-weight:600;letter-spacing:1px">PL%</th>';
+      html += '<th style="font-family:Courier New,monospace;font-size:7px;color:#c8e8ce;padding:4px 4px;text-align:right;font-weight:600;letter-spacing:1px">SH%</th>';
       html += '</tr></thead><tbody>';
 
       ranked.forEach(function(h, ri) {
         var rank = ri + 1;
-        var isTopPick = rank === 1;
-        var vFlag = isTopPick && valueFlag;
+        var isTop = rank === 1;
+        var vFlag = isTop && valueFlag;
         var wFlag = _pubIsWatch(h, rank);
-        var rowCls = isTopPick ? 'pub-tr-top' : (ri % 2 === 0 ? 'pub-tr-a' : 'pub-tr-b');
+        var rowBg = isTop ? '#f0f8f2' : (ri % 2 === 0 ? '#fff' : '#fafcfa');
         var fair = h.winPct > 0 ? fairOdds(h.winPct) : '\u2014';
 
-        // Saddle cloth colors (standard US racing post position colors)
-        var _ppC=[null,
-          {bg:'#cc2200',fg:'#fff',bo:'#cc2200'},   // 1 red
-          {bg:'#ffffff',fg:'#111',bo:'#333333'},     // 2 white/black
-          {bg:'#1144cc',fg:'#fff',bo:'#1144cc'},     // 3 blue
-          {bg:'#f5d000',fg:'#111',bo:'#c8a800'},     // 4 yellow
-          {bg:'#22aa44',fg:'#fff',bo:'#22aa44'},     // 5 green
-          {bg:'#111111',fg:'#fff',bo:'#111111'},     // 6 black
-          {bg:'#ee7700',fg:'#111',bo:'#cc5500'},     // 7 orange
-          {bg:'#e8449a',fg:'#fff',bo:'#c0207a'},     // 8 pink
-          {bg:'#00aacc',fg:'#111',bo:'#0088aa'},     // 9 turquoise
-          {bg:'#7744cc',fg:'#fff',bo:'#5522aa'},     // 10 purple
-          {bg:'#888888',fg:'#fff',bo:'#666666'},     // 11 grey
-          {bg:'#88cc00',fg:'#111',bo:'#66aa00'},     // 12 lime
-          {bg:'#cc8844',fg:'#fff',bo:'#aa6622'},     // 13 tan
-          {bg:'#880022',fg:'#fff',bo:'#660011'}      // 14 maroon
+        // Saddle cloth colors
+        var ppColors = [null,
+          {bg:'#cc2200',fg:'#fff'},{bg:'#ffffff',fg:'#111',bd:'#333'},
+          {bg:'#1144cc',fg:'#fff'},{bg:'#f5d000',fg:'#111'},
+          {bg:'#22aa44',fg:'#fff'},{bg:'#111111',fg:'#fff'},
+          {bg:'#ee7700',fg:'#111'},{bg:'#e8449a',fg:'#fff'},
+          {bg:'#00aacc',fg:'#111'},{bg:'#7744cc',fg:'#fff'},
+          {bg:'#888888',fg:'#fff'},{bg:'#88cc00',fg:'#111'},
+          {bg:'#cc8844',fg:'#fff'},{bg:'#880022',fg:'#fff'}
         ];
-        var _c=_ppC[h.pp]||{bg:'#444',fg:'#fff',bo:'#444'};
-        var _ppStyle='background:'+_c.bg+';color:'+_c.fg+';border-color:'+_c.bo+';';
+        var pc = ppColors[h.pp] || {bg:'#444',fg:'#fff'};
 
-        html += '<tr class="' + rowCls + '">';
-        html += '<td class="pub-td-rk"><span class="pub-rk-num">' + rank + '</span><span class="pub-pp-big" style="' + _ppStyle + '">' + h.pp + '</span></td>';
-        html += '<td class="pub-td-name">';
-        // Running style color — same palette as the live app.
-        // getStyle(h) returns a raw number (pstyerl), NOT a string, so we use
-        // h.styleBucket directly ('WIRE','PRESSER','STALKER','CLOSER','DEEP').
-        // Fallback computes from pstyerl using the same thresholds as analyzePaceScenario.
-        var _styleClr={'WIRE':'#c04020','PRESSER':'#906010','STALKER':'#3a7010','CLOSER':'#0a6a50','DEEP':'#1a4a8a'};
-        var _hClr;
-        if (h.styleBucket && _styleClr[h.styleBucket]) {
-          _hClr = _styleClr[h.styleBucket];
+        // Running style color
+        var styleClr = {WIRE:'#c04020',PRESSER:'#906010',STALKER:'#3a7010',CLOSER:'#0a6a50',DEEP:'#1a4a8a'};
+        var hClr = '#1a1a14';
+        if (h.styleBucket && styleClr[h.styleBucket]) {
+          hClr = styleClr[h.styleBucket];
         } else {
-          var _erl = (h.pstyerl !== null && h.pstyerl !== undefined) ? h.pstyerl
-                   : (h.pallstyerl !== null && h.pallstyerl !== undefined) ? h.pallstyerl : null;
-          if (_erl !== null) {
-            if      (_erl <= 2.0) _hClr = '#c04020';
-            else if (_erl <= 3.5) _hClr = '#906010';
-            else if (_erl <= 5.5) _hClr = '#3a7010';
-            else if (_erl <= 7.0) _hClr = '#0a6a50';
-            else                  _hClr = '#1a4a8a';
-          } else { _hClr = '#1a1a14'; }
-        }
-        html += '<div class="pub-hname" style="color:' + _hClr + '">' + h.name + '</div>';
-        var _badges = '';
-        if (vFlag) _badges += '<span class="pub-badge pub-badge-value">\u25c6 VALUE</span>';
-        if (wFlag) _badges += '<span class="pub-badge pub-badge-watch">\u26a1 LONGSHOT</span>';
-        if (h.lts === 0) _badges += '<span class="pub-badge pub-badge-fts">\u2605 DEBUT</span>';
-        if (_badges) html += '<div class="pub-badge-row">' + _badges + '</div>';
-        html += '</td>';
-        html += '<td class="pub-td-jt">' + (h.jn || '\u2014') + '</td>';
-        html += '<td class="pub-td-jt">' + (h.tn || '\u2014') + '</td>';
-        html += '<td class="pub-td-r pub-td-ml">' + (h.odds || '\u2014') + '</td>';
-        html += '<td class="pub-td-r pub-td-fair">' + fair + '</td>';
-        html += '<td class="pub-td-r pub-td-win' + (isTopPick ? ' pub-td-win-top' : '') + '">' + (h.winPct || 0) + '%</td>';
-        html += '<td class="pub-td-r">' + (h.placePct || 0) + '%</td>';
-        html += '<td class="pub-td-r">' + (h.showPct || 0) + '%</td>';
-        html += '</tr>';
-
-        // Collect CSV row
-        var _sbCSV = h.styleBucket || '';
-        if (!_sbCSV) {
-          var _erlCSV = h.pstyerl != null ? h.pstyerl : (h.pallstyerl != null ? h.pallstyerl : null);
-          if (_erlCSV !== null) {
-            if      (_erlCSV <= 2.0) _sbCSV = 'WIRE';
-            else if (_erlCSV <= 3.5) _sbCSV = 'PRESSER';
-            else if (_erlCSV <= 5.5) _sbCSV = 'STALKER';
-            else if (_erlCSV <= 7.0) _sbCSV = 'CLOSER';
-            else                     _sbCSV = 'DEEP';
+          var erl = h.pstyerl != null ? h.pstyerl : (h.pallstyerl != null ? h.pallstyerl : null);
+          if (erl !== null) {
+            if (erl <= 2.0) hClr = '#c04020';
+            else if (erl <= 3.5) hClr = '#906010';
+            else if (erl <= 5.5) hClr = '#3a7010';
+            else if (erl <= 7.0) hClr = '#0a6a50';
+            else hClr = '#1a4a8a';
           }
         }
-        csvRows.push([
-          code, date, race.race,
-          (race.dist || ''), sf,
-          race.purse ? parseInt(race.purse) : '',
-          (race.stkorclm || '').toUpperCase(),
-          rank, h.pp, h.name,
-          h.jn || '', h.tn || '',
-          h.odds || '',
-          fair !== '—' ? fair : '',
-          (h.winPct || 0) + '%',
-          (h.placePct || 0) + '%',
-          (h.showPct || 0) + '%',
-          _pubPaceLabel(pa.scenario),
-          _sbCSV,
-          vFlag ? 'VALUE' : '',
-          wFlag ? 'LONGSHOT' : ''
-        ]);
+
+        // CSV row
+        var sbCSV = h.styleBucket || '';
+        if (!sbCSV) {
+          var erlCSV = h.pstyerl != null ? h.pstyerl : (h.pallstyerl != null ? h.pallstyerl : null);
+          if (erlCSV !== null) {
+            if (erlCSV <= 2.0) sbCSV='WIRE'; else if (erlCSV <= 3.5) sbCSV='PRESSER';
+            else if (erlCSV <= 5.5) sbCSV='STALKER'; else if (erlCSV <= 7.0) sbCSV='CLOSER';
+            else sbCSV='DEEP';
+          }
+        }
+        csvRows.push([code, date, race.race, (race.dist||''), sf,
+          race.purse ? parseInt(race.purse) : '', (race.stkorclm||'').toUpperCase(),
+          rank, h.pp, h.name, h.jn||'', h.tn||'', h.odds||'',
+          fair !== '\u2014' ? fair : '', (h.winPct||0)+'%', (h.placePct||0)+'%', (h.showPct||0)+'%',
+          _pubPaceLabel(pa.scenario), sbCSV, vFlag?'VALUE':'', wFlag?'LONGSHOT':'']);
+
+        html += '<tr style="background:' + rowBg + '">';
+        // RK + PP
+        html += '<td style="padding:4px;vertical-align:middle;white-space:nowrap">';
+        html += '<span style="font-family:Courier New,monospace;font-size:8px;color:#5a8a6a;font-weight:600;margin-right:4px">' + rank + '</span>';
+        html += '<span style="font-family:Courier New,monospace;font-size:' + (isTop?'15':'13') + 'px;font-weight:700;background:' + pc.bg + ';color:' + pc.fg + ';border:1px solid ' + (pc.bd||pc.bg) + ';padding:0 4px;display:inline-block;min-width:22px;text-align:center;line-height:1.5">' + h.pp + '</span>';
+        html += '</td>';
+        // HORSE
+        html += '<td style="padding:3px 4px;overflow:hidden">';
+        html += '<div style="font-size:' + (isTop?'11':'10') + 'px;font-weight:700;color:' + hClr + ';line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + h.name + '</div>';
+        var badges = '';
+        if (vFlag) badges += '<span style="font-family:Courier New,monospace;font-size:6.5px;font-weight:700;padding:1px 3px;background:#f3eeff;color:#7a3ab0;border:1px solid #c9a0e0;margin-right:2px">\u25c6 VALUE</span>';
+        if (wFlag) badges += '<span style="font-family:Courier New,monospace;font-size:6.5px;font-weight:700;padding:1px 3px;background:#eefff4;color:#1a6a40;border:1px solid #70c890;margin-right:2px">\u26a1 LONGSHOT</span>';
+        if (h.lts === 0) badges += '<span style="font-family:Courier New,monospace;font-size:6.5px;font-weight:700;padding:1px 3px;background:#e8f4ea;color:#1a6a30;border:1px solid #90c890">\u2605 DEBUT</span>';
+        if (badges) html += '<div style="margin-top:1px">' + badges + '</div>';
+        html += '</td>';
+        // JOCKEY
+        html += '<td style="padding:3px 4px;font-size:8px;color:#1a1a14;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + (h.jn||'\u2014') + '</td>';
+        // TRAINER
+        html += '<td style="padding:3px 4px;font-size:8px;color:#1a1a14;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + (h.tn||'\u2014') + '</td>';
+        // M/L
+        html += '<td style="padding:3px 4px;text-align:right;font-family:Courier New,monospace;font-size:8px;color:#6a6a5a;font-weight:600">' + (h.odds||'\u2014') + '</td>';
+        // FAIR
+        html += '<td style="padding:3px 4px;text-align:right;font-family:Courier New,monospace;font-size:8px;color:#7a5a10;font-weight:700">' + fair + '</td>';
+        // WIN%
+        html += '<td style="padding:3px 4px;text-align:right;font-family:Courier New,monospace;font-size:' + (isTop?'11':'8') + 'px;color:#1a5a2a;font-weight:700">' + (h.winPct||0) + '%</td>';
+        // PL%
+        html += '<td style="padding:3px 4px;text-align:right;font-family:Courier New,monospace;font-size:8px;color:#1a1a14;font-weight:600">' + (h.placePct||0) + '%</td>';
+        // SH%
+        html += '<td style="padding:3px 4px;text-align:right;font-family:Courier New,monospace;font-size:8px;color:#1a1a14;font-weight:600">' + (h.showPct||0) + '%</td>';
+        html += '</tr>';
       });
 
       // Scratches
       var scratched = race.horses.filter(function(h) { return h.scratched; });
       if (scratched.length > 0) {
-        html += '<tr class="pub-tr-scr"><td colspan="9"><span class="pub-scr-label">SCRATCHED:</span> ';
+        html += '<tr style="background:#fafafa"><td colspan="9" style="padding:3px 6px;font-family:Courier New,monospace;font-size:7.5px;color:#9a8a8a">';
+        html += '<span style="font-weight:700;color:#9a6a6a;letter-spacing:1px">SCRATCHED:</span> ';
         html += scratched.map(function(h) { return 'PP' + h.pp + ' ' + h.name; }).join(' \u00b7 ');
         html += '</td></tr>';
       }
@@ -1888,188 +1907,118 @@ function _printPublicSheet(allTrackResults) {
     });
   });
 
-  html += '<div class="pub-footer">Rankings generated by the Doubling Down Simulator \u00b7 doublingdownshow.com \u00b7 For entertainment purposes only. Not financial advice. Past model accuracy does not guarantee future results.</div>';
+  html += '<div style="padding:8px 14px 14px;font-family:Courier New,monospace;font-size:7.5px;color:#9aaa9a;letter-spacing:0.5px;border-top:1px solid #dde8dd;margin-top:6px">Rankings generated by the Doubling Down Simulator \u00b7 doublingdownshow.com \u00b7 For entertainment purposes only. Not financial advice.</div>';
 
-  // ---- CSS (system fonts for reliable PDF rendering) ----
-  var css = [
-    '*{margin:0;padding:0;box-sizing:border-box;}',
-    'body{background:#fff;color:#1a1a14;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:11px;}',
-    // Masthead
-    '.pub-masthead{border-bottom:4px solid #1a4a2e;padding:14px 14px 0;background:#fff;}',
-    '.pub-masthead-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}',
-    '.pub-logo{font-family:Georgia,serif;font-size:26px;font-weight:900;color:#1a4a2e;letter-spacing:-0.5px;line-height:1;display:flex;flex-direction:column;}',
-    '.pub-logo-sub{font-family:"Courier New",monospace;font-size:9px;font-weight:600;letter-spacing:4px;color:#5a8a6a;margin-top:4px;}',
-    '.pub-masthead-meta{text-align:right;}',
-    '.pub-masthead-date{font-family:"Courier New",monospace;font-size:12px;font-weight:600;color:#1a1a14;margin-bottom:5px;}',
-    '.pub-masthead-tracks{display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;}',
-    '.pub-track-chip{font-family:"Courier New",monospace;font-size:9px;font-weight:600;letter-spacing:1px;padding:2px 7px;background:#1a4a2e;color:#fff;}',
-    // Stats bar
-    '.pub-stats-bar{background:#1a4a2e;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
-    '.pub-stat{display:flex;align-items:baseline;gap:4px;}',
-    '.pub-stat-val{font-family:"Courier New",monospace;font-size:13px;font-weight:600;color:#c9f0d8;}',
-    '.pub-stat-lbl{font-family:"Courier New",monospace;font-size:8px;letter-spacing:2px;color:#5a9a6a;text-transform:uppercase;}',
-    '.pub-stat-sep{color:#3a6a4a;font-size:14px;margin:0 4px;}',
-    '.pub-stat-note{font-family:"Courier New",monospace;font-size:7px;color:#4a7a5a;letter-spacing:0.5px;display:none;}',
-    // Track divider
-    '.pub-track-header{display:flex;align-items:center;gap:12px;padding:10px 14px 6px;font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1a4a2e;border-bottom:1px solid #c8e0ce;margin-top:6px;}',
-    '.pub-track-badge{font-family:"Courier New",monospace;font-size:10px;font-weight:600;letter-spacing:2px;padding:3px 8px;background:#1a4a2e;color:#fff;}',
-    // Race block
-    '.pub-race{padding:10px 14px 0;border-bottom:3px solid #1a4a2e;page-break-inside:avoid;}',
-    '.pub-race-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px;}',
-    '.pub-race-num{font-family:"Courier New",monospace;font-size:9px;font-weight:700;letter-spacing:3px;color:#1a4a2e;background:#eaf5ee;border:1px solid #1a4a2e;padding:3px 9px;white-space:nowrap;flex-shrink:0;}',
-    '.pub-race-info{flex:1;}',
-    '.pub-race-title{font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1a1a14;line-height:1.2;}',
-    '.pub-race-meta{font-family:"Courier New",monospace;font-size:9px;color:#6a7a6a;margin-top:2px;}',
-    '.pub-sim-note{font-family:"Courier New",monospace;font-size:7px;color:#9aaa9a;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;text-align:right;line-height:1.6;}',
-    '.pub-leg{font-family:"Courier New",monospace;font-size:7px;font-weight:700;margin-left:5px;letter-spacing:0.5px;}',
-    // Pace banner
-    '.pub-pace{padding:6px 10px;margin-bottom:8px;display:flex;align-items:baseline;gap:10px;}',
-    '.pub-pace-label{font-family:"Courier New",monospace;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}',
-    '.pub-pace-desc{font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:9px;color:#4a5a4a;line-height:1.4;}',
-    // Table
-    '.pub-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10px;}',
-    '.pub-table thead tr{background:#1a4a2e;}',
-    '.pub-table th{font-family:"Courier New",monospace;font-size:7.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#c8e8ce;padding:5px 7px;text-align:left;border:none;}',
-    '.pub-th-rk{width:72px;text-align:left;white-space:nowrap;}',
-    '.pub-th-r{text-align:right !important;}',
-    '.pub-tr-top{background:#f0f8f2;}',
-    '.pub-tr-a{background:#fff;}',
-    '.pub-tr-b{background:#fafcfa;}',
-    '.pub-tr-scr{background:#fafafa;}',
-    '.pub-table td{padding:5px 7px;border-bottom:1px solid #edf2ed;vertical-align:middle;font-weight:600;}',
-    // Rank + PP combined cell
-    '.pub-td-rk{white-space:nowrap;width:72px;vertical-align:middle;}',
-    '.pub-rk-num{font-family:"Courier New",monospace;font-size:9px;font-weight:700;color:#5a8a6a;display:inline-block;width:16px;text-align:right;margin-right:5px;}',
-    '.pub-pp-big{font-family:"Courier New",monospace;font-size:16px;font-weight:700;border:1.5px solid #ccc;padding:0 6px;display:inline-block;text-align:center;min-width:28px;line-height:1.5;}',
-    // Horse name + badges
-    '.pub-td-name{min-width:80px;max-width:120px;vertical-align:middle;overflow:hidden;}',
-    '.pub-hname{font-size:11px;font-weight:700;color:#1a1a14;display:block;line-height:1.3;}',
-    '.pub-tr-top .pub-hname{font-family:Georgia,serif;font-size:13px;font-weight:700;}',
-    '.pub-badge-row{margin-top:2px;display:block;}',
-    '.pub-badge{font-family:"Courier New",monospace;font-size:7.5px;font-weight:700;padding:1px 5px;margin-right:3px;letter-spacing:0.5px;border-radius:2px;display:inline-block;}',
-    '.pub-badge-value{background:#f3eeff;color:#7a3ab0;border:1px solid #c9a0e0;}',
-    '.pub-badge-watch{background:#eefff4;color:#1a6a40;border:1px solid #70c890;}',
-    '.pub-badge-fts{background:#e8f4ea;color:#1a6a30;border:1px solid #90c890;}',
-    // Data cells
-    '.pub-td-r{text-align:right;font-family:"Courier New",monospace;font-size:9px;color:#1a1a14;font-weight:700;}',
-    '.pub-td-jt{font-size:8px;color:#1a1a14;max-width:80px;font-weight:600;overflow:hidden;white-space:nowrap;}',
-    '.pub-td-ml{color:#6a6a5a;}',
-    '.pub-td-win{color:#1a5a2a;font-weight:700;}',
-    '.pub-td-win-top{font-size:12px;color:#1a4a2e;font-weight:700;}',
-    '.pub-td-fair{color:#7a5a10;font-weight:700;}',
-    '.pub-scr-label{font-family:"Courier New",monospace;font-size:8px;font-weight:700;color:#9a6a6a;letter-spacing:1px;}',
-    '.pub-tr-scr td{font-family:"Courier New",monospace;font-size:8px;color:#9a8a8a;padding:4px 7px;border-bottom:none;}',
-    // Footer
-    '.pub-footer{padding:8px 14px 12px;font-family:"Courier New",monospace;font-size:7.5px;color:#9aaa9a;letter-spacing:0.5px;border-top:1px solid #dde8dd;margin-top:6px;}'
-  ].join('');
+  // ---- OPEN PRINT WINDOW (native Chrome rendering = perfect layout) ----
+  var trackTitle = trkName(currentTrack || '');
+  var win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>dd-rankings</title>');
+  win.document.write('<style>');
+  win.document.write('*{margin:0;padding:0;box-sizing:border-box}-webkit-print-color-adjust:exact;print-color-adjust:exact}');
+  win.document.write('body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#fff;width:100%}');
+  win.document.write('@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:0.35in;size:letter}}');
+  win.document.write('</style></head><body>');
+  win.document.write(html);
 
-  // ---- GENERATE PDF via html2pdf.js ----
-  var btn = document.getElementById('rankingsBtn');
+  // ---- DRIVE UPLOAD: build PDF from print window via html2canvas + jsPDF ----
+  // Load libraries inside the print window, capture, POST to Drive
+  if (PUBLIC_DRIVE_URL) {
+    var driveUrl = PUBLIC_DRIVE_URL;
+    var csvString = csvRows.map(function(row) {
+      return row.map(function(cell) {
+        var s = String(cell == null ? '' : cell);
+        if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0) s = '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }).join(',');
+    }).join('\r\n');
 
-  // Pass content as a string directly to html2pdf — it creates and manages its own
-  // temporary DOM container, which html2canvas can reliably capture. Manual off-screen
-  // div positioning consistently produces blank output regardless of position strategy.
-  // Hard-constrain to letter width (816px = 8.5in at 96dpi) so html2canvas
-  // captures only the content area, not the full laptop viewport.
-  var srcString = '<style>' + css + '</style><div style="width:816px;box-sizing:border-box;overflow:hidden;">' + html + '</div>';
+    win.document.write('<script>');
+    win.document.write('var _driveUrl=' + JSON.stringify(driveUrl) + ';');
+    win.document.write('var _csv=' + JSON.stringify(csvString) + ';');
+    win.document.write('function _upload(b64){');
+    win.document.write('  fetch(_driveUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"pdf",pdf:b64})});');
+    win.document.write('  fetch(_driveUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"csv",csv:_csv})});');
+    win.document.write('}');
+    // Load html2canvas + jsPDF from CDN, then capture and upload
+    win.document.write('function _loadScript(src,cb){var s=document.createElement("script");s.src=src;s.onload=cb;document.head.appendChild(s);}');
+    win.document.write('window.onload=function(){');
+    win.document.write('  _loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",function(){');
+    win.document.write('    _loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",function(){');
+    win.document.write('      html2canvas(document.body,{scale:1.5,backgroundColor:"#ffffff",logging:false,windowWidth:816}).then(function(canvas){');
+    win.document.write('        var imgData=canvas.toDataURL("image/jpeg",0.92);');
+    win.document.write('        var pdf=new window.jspdf.jsPDF("p","in","letter");');
+    win.document.write('        var pgW=8.5,pgH=11,mg=0.35,cW=pgW-2*mg;');
+    win.document.write('        var iW=canvas.width/1.5/96,iH=canvas.height/1.5/96;');
+    win.document.write('        var scale=cW/iW,scaledH=iH*scale;');
+    win.document.write('        var y=mg,remaining=scaledH;');
+    win.document.write('        var contentH=pgH-2*mg;');
+    win.document.write('        var srcY=0,first=true;');
+    win.document.write('        while(remaining>0){');
+    win.document.write('          if(!first)pdf.addPage();');
+    win.document.write('          var sliceH=Math.min(remaining,contentH);');
+    win.document.write('          var sliceFrac=sliceH/scaledH;');
+    win.document.write('          pdf.addImage(imgData,"JPEG",mg,mg,cW,sliceH,"","FAST",0);');
+    win.document.write('          remaining-=sliceH;srcY+=sliceFrac;first=false;');
+    win.document.write('        }');
+    win.document.write('        var b64=pdf.output("datauristring").split(",")[1];');
+    win.document.write('        _upload(b64);');
+    win.document.write('        window.print();');
+    win.document.write('      });');
+    win.document.write('    });');
+    win.document.write('  });');
+    win.document.write('};');
+    win.document.write('<\/script>');
+  } else {
+    win.document.write('<script>window.onload=function(){window.print()};<\/script>');
+  }
 
-  // Build CSV string from collected rows
-  var csvString = csvRows.map(function(row) {
+  win.document.write('</body></html>');
+  win.document.close();
+
+  // Also download CSV locally
+  var csvString2 = csvRows.map(function(row) {
     return row.map(function(cell) {
       var s = String(cell == null ? '' : cell);
-      if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0)
-        s = '"' + s.replace(/"/g, '""') + '"';
+      if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0) s = '"' + s.replace(/"/g, '""') + '"';
       return s;
     }).join(',');
   }).join('\r\n');
+  var csvBlob = new Blob([csvString2], {type:'text/csv'});
+  var csvUrl = URL.createObjectURL(csvBlob);
+  var csvA = document.createElement('a');
+  csvA.href = csvUrl; csvA.download = 'dd-rankings-' + masterDate.replace(/\//g,'-') + '.csv';
+  document.body.appendChild(csvA); csvA.click(); document.body.removeChild(csvA);
+  URL.revokeObjectURL(csvUrl);
 
-  function doUpload(dataUri) {
-    var dateStr = masterDate.replace(/\//g, '-');
-
-    // Download PDF locally (date-stamped to avoid filename conflicts)
-    var pdfFile = 'dd-rankings-' + dateStr + '.pdf';
-    var a = document.createElement('a');
-    a.href = dataUri; a.download = pdfFile;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-
-    // Download CSV locally
-    var csvFile = 'dd-rankings-' + dateStr + '.csv';
-    var csvBlob = new Blob([csvString], { type: 'text/csv' });
-    var csvUrl = URL.createObjectURL(csvBlob);
-    var b = document.createElement('a');
-    b.href = csvUrl; b.download = csvFile;
-    document.body.appendChild(b); b.click(); document.body.removeChild(b);
-    URL.revokeObjectURL(csvUrl);
-
-    if (PUBLIC_DRIVE_URL) {
-      btn.textContent = '\u23f3 Uploading to Drive...';
-      // Upload PDF
-      fetch(PUBLIC_DRIVE_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ type: 'pdf', pdf: dataUri.split(',')[1] })
-      });
-      // Upload CSV (separate request, fire-and-forget)
-      fetch(PUBLIC_DRIVE_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ type: 'csv', csv: csvString })
-      }).then(function() {
-        btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-        showStatus('PDF + CSV uploaded to Drive \u2713');
-      }).catch(function(e) {
-        btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-        showStatus('Drive upload failed: ' + e.message, true);
-      });
-    } else {
-      btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-      showStatus('PDF + CSV downloaded \u2014 set PUBLIC_DRIVE_URL to enable auto-upload.');
-    }
-  }
-
-  function doGenerate() {
-    btn.textContent = '\u23f3 Building PDF...';
-
-    // Safety net — if html2pdf hangs (canvas too large, memory limit hit),
-    // this ensures the button doesn't stay frozen forever.
-    var timeoutId = setTimeout(function() {
-      btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-      showStatus('PDF generation timed out — try with fewer races loaded, or use Print All + Save as PDF instead.', true);
-    }, 45000);
-
-    html2pdf().set({
-      margin:     [0.4, 0.4, 0.4, 0.4],
-      filename:   'dd-rankings.pdf',
-      image:      { type: 'jpeg', quality: 0.90 },
-      html2canvas:{ scale: 1, useCORS: false, logging: false, backgroundColor: '#ffffff', windowWidth: 816, width: 816 },
-      jsPDF:      { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak:  { mode: ['css', 'legacy'], avoid: '.pub-race' }
-    }).from(srcString, 'string').output('datauristring').then(function(dataUri) {
-      clearTimeout(timeoutId);
-      doUpload(dataUri);
-    }).catch(function(e) {
-      clearTimeout(timeoutId);
-      btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-      showStatus('PDF generation failed: ' + e.message, true);
-    });
-  }
-
-  // Load html2pdf.js from CDN on first use, cached on subsequent presses
-  if (window.html2pdf) {
-    doGenerate();
-  } else {
-    btn.textContent = '\u23f3 Loading PDF library...';
-    var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    s.onload = doGenerate;
-    s.onerror = function() {
-      btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
-      showStatus('Could not load PDF library \u2014 check internet connection.', true);
-    };
-    document.head.appendChild(s);
-  }
+  // Re-enable button
+  var btn = document.getElementById('rankingsBtn');
+  btn.disabled = false; btn.textContent = '\ud83d\udccb Rankings';
+  showStatus('Rankings opened \u2014 use Save as PDF in the print dialog. Drive will update automatically if PUBLIC_DRIVE_URL is set.');
 }
 
+"""
+
+content = content[:start_idx] + NEW_FUNCTION + content[end_idx:]
+
+with open('/mnt/user-data/outputs/horse_racing_sim.html', 'w') as f:
+    f.write(content)
+
+print(f'Done. File is {len(content)} chars')
+
+# Quick checks
+checks = [
+    ('Print window opened', "win.document.write" in NEW_FUNCTION),
+    ('table-layout:fixed', 'table-layout:fixed' in NEW_FUNCTION),
+    ('colgroup widths', 'colgroup' in NEW_FUNCTION),
+    ('inline styles only', 'class="pub-' not in NEW_FUNCTION),
+    ('Drive upload in print window', '_upload' in NEW_FUNCTION),
+    ('CSV download', 'csvString2' in NEW_FUNCTION),
+    ('html2canvas in print window', 'html2canvas(document.body' in NEW_FUNCTION),
+    ('jsPDF multi-page', 'addPage' in NEW_FUNCTION),
+]
+for label, result in checks:
+    print(f'{"✓" if result else "✗"} {label}')
+PYEOF
 
 // ===== RUN ALL AND PRINT =====
 function runAllAndPrint(){
