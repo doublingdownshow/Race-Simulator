@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Doubling Down Race Rankings — figure-based handicapping picks for today's card.">
+<title>Doubling Down · Race Rankings</title>
+<style>
+:root{--bg:#080e06;--surface:#0d1509;--card:#111a0e;--border:#1c2a17;--gold:#c9a84c;--gold-d:#7a6330;--green-b:#52b788;--text:#d4d0c0;--muted:#657a5e;--white:#f0ede4;--value:#b088d0;--longshot:#4ec880;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;min-height:100vh;}
+.hdr{background:linear-gradient(180deg,#0b1408,var(--bg));border-bottom:1px solid var(--gold-d);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:200;}
+.logo-main{font-family:Georgia,serif;font-size:19px;font-weight:900;color:var(--white);}
+.logo-main em{color:var(--gold);font-style:normal;}
+.logo-sub{font-family:monospace;font-size:8px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hdr-date{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:1px;}
+.hdr-btn{background:transparent;border:1px solid var(--gold-d);color:var(--gold-d);font-family:monospace;font-size:10px;letter-spacing:1px;padding:5px 12px;cursor:pointer;transition:.15s;text-transform:uppercase;}
+.hdr-btn:hover{border-color:var(--gold);color:var(--gold);}
+.wx-bar{background:linear-gradient(90deg,#0a1a10,#081408);border-bottom:1px solid var(--border);}
+.wx-track-row{display:flex;align-items:stretch;flex-wrap:wrap;}
+.wx-panel{display:flex;align-items:center;gap:14px;padding:10px 20px;flex:1;min-width:280px;border-right:1px solid var(--border);}
+.wx-panel:last-child{border-right:none;}
+.wx-icon{font-size:28px;flex-shrink:0;line-height:1;}
+.wx-temp{font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--white);line-height:1;}
+.wx-feels{font-family:monospace;font-size:9px;color:var(--muted);margin-top:2px;}
+.wx-center{flex:1;min-width:0;}
+.wx-track-label{font-family:monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--gold-d);text-transform:uppercase;margin-bottom:3px;}
+.wx-condition{font-size:13px;font-weight:600;color:var(--text);}
+.wx-details{font-family:monospace;font-size:9px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
+.wx-badge-block{flex-shrink:0;text-align:center;}
+.wx-badge-lbl{font-family:monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.wx-badge{font-family:monospace;font-size:11px;font-weight:700;padding:4px 10px;display:block;border-radius:2px;white-space:nowrap;}
+.wx-fast{background:rgba(82,183,136,.15);color:var(--green-b);border:1px solid rgba(82,183,136,.35);}
+.wx-good{background:rgba(100,180,100,.12);color:#80c080;border:1px solid rgba(100,180,100,.30);}
+.wx-wet{background:rgba(100,140,200,.12);color:#88b0e0;border:1px solid rgba(100,140,200,.30);}
+.wx-off{background:rgba(180,120,60,.12);color:#c09050;border:1px solid rgba(180,120,60,.30);}
+.wx-note{font-family:monospace;font-size:7px;color:var(--muted);margin-top:4px;text-align:center;}
+.wx-status{padding:12px 20px;font-family:monospace;font-size:10px;color:var(--muted);letter-spacing:1px;}
+.main{max-width:1280px;margin:0 auto;padding:20px 16px 48px;}
+.state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;padding:40px 24px;text-align:center;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.state-icon{font-size:44px;margin-bottom:16px;animation:bounce 1.6s ease-in-out infinite;}
+.state-title{font-family:Georgia,serif;font-size:18px;color:var(--white);margin-bottom:8px;}
+.state-sub{font-family:monospace;font-size:10px;color:var(--muted);letter-spacing:1px;line-height:1.8;}
+.track-section{margin-bottom:36px;}
+.track-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.track-badge{background:var(--gold);color:#0a0a08;font-family:monospace;font-weight:700;font-size:11px;letter-spacing:2px;padding:4px 10px;text-transform:uppercase;}
+.track-name{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--white);}
+.track-date{font-family:monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-left:auto;}
+.section-controls{display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px;}
+.ctrl-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:monospace;font-size:9px;letter-spacing:1px;padding:3px 10px;cursor:pointer;transition:.15s;text-transform:uppercase;}
+.ctrl-btn:hover{border-color:var(--gold-d);color:var(--gold-d);}
+.races-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:12px;}
+.race-card{background:var(--card);border:1px solid var(--border);transition:border-color .2s,opacity .2s;}
+.race-card:hover{border-color:#2a3a24;}
+.race-card.collapsed{opacity:.65;}
+.race-card.collapsed:hover{opacity:1;}
+.race-card.collapsed .rc-body{display:none;}
+.race-card.collapsed .rc-toggle{transform:rotate(-90deg);}
+.rc-hdr{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}
+.rc-hdr:hover{background:#0f1c0d;}
+.rc-num{background:var(--gold-d);color:#0a0a08;font-family:monospace;font-weight:700;font-size:9px;letter-spacing:2px;padding:3px 8px;white-space:nowrap;flex-shrink:0;margin-top:3px;}
+.rc-info{flex:1;min-width:0;}
+.rc-track-name{font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--white);}
+.rc-meta{font-family:monospace;font-size:9px;color:var(--muted);letter-spacing:.5px;margin-top:2px;}
+.rc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.rc-legend{font-family:monospace;font-size:7px;color:var(--muted);text-align:right;white-space:nowrap;}
+.rc-toggle{font-size:10px;color:var(--muted);transition:transform .2s;}
+.pace-banner{display:flex;align-items:baseline;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);}
+.pace-lbl{font-family:monospace;font-size:8.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.pace-desc{font-family:monospace;font-size:8.5px;color:var(--muted);line-height:1.4;}
+.p-lone{background:rgba(26,106,64,.15);border-left:3px solid #1a6a40;}
+.p-hot{background:rgba(138,32,16,.15);border-left:3px solid #8a2010;}
+.p-soft{background:rgba(42,90,122,.15);border-left:3px solid #2a5a7a;}
+.p-honest{background:rgba(58,90,58,.15);border-left:3px solid #3a5a3a;}
+.p-duel{background:rgba(122,80,16,.15);border-left:3px solid #7a5010;}
+.p-nospeed{background:rgba(90,90,32,.15);border-left:3px solid #5a5a20;}
+.r-table{width:100%;border-collapse:collapse;}
+.r-table th{font-family:monospace;font-size:7.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.r-table th.r{text-align:right;}
+.r-table td{padding:7px 8px;border-bottom:1px solid var(--surface);vertical-align:middle;}
+.r-table td.r{text-align:right;}
+.r-table tr:last-child td{border-bottom:none;}
+.r-table tr:hover td{background:rgba(201,168,76,.03);}
+.r-table tbody tr:first-child td{background:rgba(201,168,76,.04);}
+.rk-pp-cell{display:flex;align-items:center;gap:5px;}
+.rk-n{font-family:monospace;font-size:8.5px;color:var(--muted);width:12px;flex-shrink:0;}
+.pp-chip{font-family:monospace;font-size:12px;font-weight:700;padding:1px 5px;min-width:24px;text-align:center;line-height:1.6;display:inline-block;}
+.h-name{font-size:11px;font-weight:600;color:var(--white);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+.h-badges{margin-top:3px;display:flex;gap:3px;flex-wrap:wrap;}
+.conn{font-family:monospace;font-size:8px;color:var(--muted);line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+.d-ml{font-family:monospace;font-size:9px;color:var(--muted);}
+.d-fair{font-family:monospace;font-size:9.5px;font-weight:700;color:var(--green-b);}
+.d-win{font-family:monospace;font-size:11px;font-weight:700;color:var(--gold);}
+.d-pct{font-family:monospace;font-size:9px;color:var(--text);}
+.badge{font-family:monospace;font-size:8px;font-weight:700;padding:2px 6px;letter-spacing:.5px;display:inline-block;border-radius:1px;}
+.b-value{background:rgba(176,136,208,.12);color:var(--value);border:1px solid rgba(176,136,208,.35);}
+.b-longshot{background:rgba(78,200,128,.10);color:var(--longshot);border:1px solid rgba(78,200,128,.30);}
+.b-debut{background:rgba(82,183,136,.10);color:var(--green-b);border:1px solid rgba(82,183,136,.28);}
+.s-wire{color:#d06030!important;}.s-presser{color:#b08020!important;}.s-stalker{color:#60a010!important;}.s-closer{color:#18a070!important;}.s-deep{color:#2868c0!important;}
+.rc-scratched{padding:5px 14px;font-family:monospace;font-size:8px;color:var(--muted);background:var(--surface);border-top:1px solid var(--border);}
+.footer{text-align:center;padding:24px;font-family:monospace;font-size:9px;color:var(--muted);letter-spacing:.5px;line-height:1.9;border-top:1px solid var(--border);}
+.footer a{color:var(--gold-d);text-decoration:none;}
+@media(max-width:680px){.hdr{padding:12px 14px;}.logo-main{font-size:16px;}.hdr-date{display:none;}.main{padding:14px 10px 40px;}.races-grid{grid-template-columns:1fr;gap:10px;}.h-name{max-width:110px;}.conn{max-width:90px;}.wx-panel{min-width:100%;border-right:none;border-bottom:1px solid var(--border);}.wx-panel:last-child{border-bottom:none;}}
+@media(max-width:420px){.r-table th:nth-child(3),.r-table td:nth-child(3){display:none;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="logo-main">&#x1F3C7; Doubling <em>Down</em></div><div class="logo-sub">Race Rankings</div></div>
+  <div class="hdr-right">
+    <span class="hdr-date" id="hdDate"></span>
+    <button class="hdr-btn" id="refreshBtn">&#x21BA; Refresh</button>
+  </div>
+</header>
+<div class="wx-bar" id="wxBar"><div class="wx-status">&#x26C5; Loading track weather&hellip;</div></div>
+<div id="scLoading" class="state"><div class="state-icon">&#x1F3C7;</div><div class="state-title">Loading Today's Picks</div><div class="state-sub">Fetching rankings&hellip;</div></div>
+<div id="scError" class="state" style="display:none"><div class="state-icon" style="animation:none">&#x26A0;&#xFE0F;</div><div class="state-title">Rankings Unavailable</div><div class="state-sub" id="errMsg">Could not load rankings. Try refreshing.</div></div>
+<div id="scContent" style="display:none">
+  <div class="main" id="appRoot"></div>
+  <footer class="footer">Doubling Down Simulator &middot; <a href="https://doublingdownshow.com">doublingdownshow.com</a><br>Weather: <a href="https://open-meteo.com">Open-Meteo</a> (open source) &middot; Track conditions: verify with racing secretary<br>For entertainment purposes only. Not financial advice.</footer>
+</div>
+<script>
+// ════════════════════════════════════
+// CONFIG — paste your Apps Script URL
+var RANKINGS_URL='YOUR_APPS_SCRIPT_URL?type=rankings';
+// ════════════════════════════════════
+var TRACKS={SAR:{lat:43.0834,lon:-73.7846,city:'Saratoga Springs, NY'},CD:{lat:38.2026,lon:-85.7706,city:'Louisville, KY'},BEL:{lat:40.7212,lon:-73.7181,city:'Elmont, NY'},AQU:{lat:40.6698,lon:-73.8323,city:'Jamaica, NY'},KEE:{lat:38.0467,lon:-84.5904,city:'Lexington, KY'},GP:{lat:25.9706,lon:-80.2217,city:'Hallandale Beach, FL'},DMR:{lat:32.9615,lon:-117.2504,city:'Del Mar, CA'},SA:{lat:34.1358,lon:-118.0598,city:'Arcadia, CA'},PIM:{lat:39.3279,lon:-76.6750,city:'Baltimore, MD'},MTH:{lat:40.1895,lon:-74.0143,city:'Oceanport, NJ'},DEL:{lat:39.6837,lon:-75.5993,city:'Stanton, DE'},TAM:{lat:27.9681,lon:-82.5141,city:'Tampa, FL'},FG:{lat:30.0227,lon:-90.0849,city:'New Orleans, LA'},OP:{lat:34.5003,lon:-93.0521,city:'Hot Springs, AR'},PRX:{lat:40.1051,lon:-75.0207,city:'Bensalem, PA'},IND:{lat:39.7423,lon:-86.1517,city:'Shelbyville, IN'},LRL:{lat:39.1681,lon:-76.8378,city:'Laurel, MD'},TDN:{lat:41.4995,lon:-81.7002,city:'Cleveland, OH'},CBY:{lat:44.9240,lon:-93.3107,city:'Shakopee, MN'},CT:{lat:39.2854,lon:-77.8611,city:'Charles Town, WV'}};
+var PP_COLORS=[null,{bg:'#cc2200',fg:'#fff'},{bg:'#f8f8f8',fg:'#111',bd:'#444'},{bg:'#1144cc',fg:'#fff'},{bg:'#f5d000',fg:'#111'},{bg:'#22aa44',fg:'#fff'},{bg:'#111111',fg:'#fff'},{bg:'#ee7700',fg:'#111'},{bg:'#e8449a',fg:'#fff'},{bg:'#00aacc',fg:'#111'},{bg:'#7744cc',fg:'#fff'},{bg:'#888888',fg:'#fff'},{bg:'#88cc00',fg:'#111'},{bg:'#cc8844',fg:'#fff'},{bg:'#880022',fg:'#fff'}];
+var SC={WIRE:'s-wire',PRESSER:'s-presser',STALKER:'s-stalker',CLOSER:'s-closer',DEEP:'s-deep'};
+var PC={LONE_SPEED:'p-lone',HOT_PACE:'p-hot',PACE_DUEL:'p-duel',SOFT_PACE:'p-soft',HONEST_PACE:'p-honest',NO_SPEED:'p-nospeed'};
+var PI={LONE_SPEED:'&#11088;',HOT_PACE:'&#x1F525;',PACE_DUEL:'&#x2694;',SOFT_PACE:'&#x3030;',HONEST_PACE:'&#x2713;',NO_SPEED:'&#x2753;'};
+var PCLR={LONE_SPEED:'#1a6a40',HOT_PACE:'#8a2010',PACE_DUEL:'#7a5010',SOFT_PACE:'#2a5a7a',HONEST_PACE:'#3a5a3a',NO_SPEED:'#5a5a20'};
+function e(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pps(pp){var c=PP_COLORS[pp]||{bg:'#333',fg:'#fff'};return 'background:'+c.bg+';color:'+c.fg+';border:1px solid '+(c.bd||c.bg);}
+function wxc(code){if(code===0)return{i:'&#9728;&#65039;',l:'Clear'};if(code===1)return{i:'&#127780;',l:'Mainly Clear'};if(code===2)return{i:'&#9925;',l:'Partly Cloudy'};if(code===3)return{i:'&#9729;&#65039;',l:'Overcast'};if(code<=48)return{i:'&#127787;&#65039;',l:'Foggy'};if(code<=55)return{i:'&#127782;',l:'Drizzle'};if(code<=65)return{i:'&#127783;&#65039;',l:'Rain'};if(code<=75)return{i:'&#10052;&#65039;',l:'Snow'};if(code<=82)return{i:'&#127782;',l:'Showers'};return{i:'&#9928;&#65039;',l:'Thunderstorm'};}
+function wd(deg){return['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8];}
+function te(code,precip){precip=precip||0;if(code>=95||precip>=0.15)return{l:'Muddy',c:'wx-off'};if(precip>=0.05||code>=61)return{l:'Sloppy',c:'wx-wet'};if(precip>=0.01||code>=51)return{l:'Wet-Fast',c:'wx-wet'};if(code>=45)return{l:'Good',c:'wx-good'};return{l:'Fast',c:'wx-fast'};}
+function wxPanel(code,data){var c=data.current,wx=wxc(c.weather_code),est=te(c.weather_code,c.precipitation),loc=TRACKS[code]||{city:code};return '<div class="wx-panel"><div class="wx-icon">'+wx.i+'</div><div><div class="wx-temp">'+Math.round(c.temperature_2m)+'&deg;F</div><div class="wx-feels">Feels '+Math.round(c.apparent_temperature)+'&deg;</div></div><div class="wx-center"><div class="wx-track-label">'+e(code)+' &mdash; '+e(loc.city)+'</div><div class="wx-condition">'+wx.l+'</div><div class="wx-details"><span>&#128168; '+wd(c.wind_direction_10m)+' '+Math.round(c.wind_speed_10m)+' mph</span><span>&#128167; '+c.relative_humidity_2m+'% RH</span>'+(c.precipitation>0?'<span>&#127783; '+c.precipitation.toFixed(2)+'" last hr</span>':'')+'</div></div><div class="wx-badge-block"><div class="wx-badge-lbl">Est. Track</div><span class="wx-badge '+est.c+'">'+est.l+'</span><div class="wx-note">Verify w/ Racing Office</div></div></div>';}
+function fetchWx(code){var loc=TRACKS[code];if(!loc)return Promise.resolve('');var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.lat+'&longitude='+loc.lon+'&current=temperature_2m,apparent_temperature,precipitation,wind_speed_10m,wind_direction_10m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';return fetch(url).then(function(r){return r.json();}).then(function(d){return wxPanel(code,d);}).catch(function(){return '';});}
+function loadWeather(codes){var bar=document.getElementById('wxBar');Promise.all(codes.map(fetchWx)).then(function(ps){var html=ps.filter(Boolean).join('');bar.innerHTML=html?'<div class="wx-track-row">'+html+'</div>':'<div class="wx-status">Weather unavailable</div>';});}
+function showScreen(id){['scLoading','scError','scContent'].forEach(function(s){var el=document.getElementById(s);el.style.display=s===id?(s==='scContent'?'block':'flex'):'none';});}
+function load(){var btn=document.getElementById('refreshBtn');btn.textContent='&#x21BA; Loading&hellip;';btn.disabled=true;showScreen('scLoading');fetch(RANKINGS_URL,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(d){render(d);}).catch(function(err){document.getElementById('errMsg').textContent=err.message||'Network error.';showScreen('scError');}).finally(function(){btn.innerHTML='&#x21BA; Refresh';btn.disabled=false;});}
+function render(data){var root=document.getElementById('appRoot');root.innerHTML='';if(data.generated){var d=new Date(data.generated);document.getElementById('hdDate').textContent='Updated '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}if(data.date)document.title='DD Rankings &middot; '+data.date;if(!data.tracks||!data.tracks.length){root.innerHTML='<div class="state" style="min-height:40vh"><div class="state-title">No races published yet</div><div class="state-sub">Check back when the card is live.</div></div>';showScreen('scContent');return;}loadWeather(data.tracks.map(function(t){return t.code;}));data.tracks.forEach(function(track){var sec=document.createElement('div');sec.className='track-section';sec.innerHTML='<div class="track-hdr"><span class="track-badge">'+e(track.code)+'</span><span class="track-name">'+e(track.name)+'</span>'+(data.date?'<span class="track-date">'+e(data.date)+'</span>':'')+'</div><div class="section-controls"><button class="ctrl-btn" onclick="ca(this)">&#9660; Collapse All</button><button class="ctrl-btn" onclick="ea(this)">&#9650; Expand All</button></div>';var grid=document.createElement('div');grid.className='races-grid';(track.races||[]).forEach(function(race){grid.appendChild(buildCard(race,track));});sec.appendChild(grid);root.appendChild(sec);});showScreen('scContent');}
+function buildCard(race,track){var id='rc-'+track.code+'-'+race.race,cond=[race.dist,race.surface].filter(Boolean).join(' &middot; ');if(race.class)cond+=' &middot; '+race.class;if(race.purse)cond+=' &middot; $'+Number(race.purse).toLocaleString();var pc=PCLR[race.pace]||'#5a5a5a',pi=PI[race.pace]||'&middot;',pcls=PC[race.pace]||'p-honest';var card=document.createElement('div');card.className='race-card';card.id=id;var h='<div class="rc-hdr" onclick="toggle(\''+id+'\')"><span class="rc-num">RACE '+e(race.race)+'</span><div class="rc-info"><div class="rc-track-name">'+e(track.name)+'</div><div class="rc-meta">'+cond+'</div></div><div class="rc-right"><div class="rc-legend"><span style="color:#d06030">&#9632;</span>Wire <span style="color:#b08020">&#9632;</span>Press <span style="color:#60a010">&#9632;</span>Stalk <span style="color:#18a070">&#9632;</span>Close <span style="color:#2868c0">&#9632;</span>Deep</div><div class="rc-toggle">&#9660;</div></div></div>';h+='<div class="rc-body"><div class="pace-banner '+pcls+'"><span class="pace-lbl" style="color:'+pc+'">'+pi+' '+(race.pace||'').replace(/_/g,' ')+'</span><span class="pace-desc">'+e(race.paceDesc||'')+'</span></div>';h+='<table class="r-table"><thead><tr><th>RK &middot; PP</th><th>Horse</th><th>Jockey / Trainer</th><th class="r">M/L</th><th class="r">Fair</th><th class="r">Win%</th><th class="r">Pl%</th></tr></thead><tbody>';(race.rankings||[]).forEach(function(hr){var sc=SC[hr.style]||'',bdg='';if(hr.value)bdg+='<span class="badge b-value">&#9670; Value</span>';if(hr.longshot)bdg+='<span class="badge b-longshot">&#x26A1; Longshot</span>';if(hr.debut)bdg+='<span class="badge b-debut">&#9733; Debut</span>';h+='<tr><td><div class="rk-pp-cell"><span class="rk-n">'+hr.rank+'</span><span class="pp-chip" style="'+pps(hr.pp)+'">'+hr.pp+'</span></div></td><td><div class="h-name '+sc+'">'+e(hr.name)+'</div>'+(bdg?'<div class="h-badges">'+bdg+'</div>':'')+'</td><td class="conn">'+e(hr.jockey||'&mdash;')+'<br>'+e(hr.trainer||'&mdash;')+'</td><td class="r d-ml">'+e(hr.ml||'&mdash;')+'</td><td class="r d-fair">'+e(hr.fair||'&mdash;')+'</td><td class="r d-win">'+hr.win+'%</td><td class="r d-pct">'+hr.place+'%</td></tr>';});h+='</tbody></table>';if(race.scratched&&race.scratched.length){h+='<div class="rc-scratched">&#x2702; Scratched: '+race.scratched.map(function(s){return 'PP'+s.pp+' '+e(s.name);}).join(' &middot; ')+'</div>';}h+='</div>';card.innerHTML=h;return card;}
+function toggle(id){document.getElementById(id).classList.toggle('collapsed');}
+function ca(btn){btn.closest('.track-section').querySelectorAll('.race-card').forEach(function(c){c.classList.add('collapsed');});}
+function ea(btn){btn.closest('.track-section').querySelectorAll('.race-card').forEach(function(c){c.classList.remove('collapsed');});}
+document.getElementById('refreshBtn').addEventListener('click',load);
+load();
+</script>
+</body>
+</html>
