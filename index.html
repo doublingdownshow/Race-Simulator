@@ -2270,6 +2270,118 @@ function styleDesc(h){
 }
 function trkName(c){var m={CD:'Churchill Downs',SAR:'Saratoga',SA:'Santa Anita',BEL:'Belmont Park',AQU:'Aqueduct',KEE:'Keeneland',GP:'Gulfstream Park',DMR:'Del Mar',PIM:'Pimlico',FG:'Fair Grounds',TAM:'Tampa Bay Downs',OP:'Oaklawn Park',PRX:'Parx Racing',MTH:'Monmouth Park',TDN:'Thistledown',MNR:'Mountaineer',HAW:'Hawthorne',LRL:'Laurel Park',DEL:'Delaware Park',IND:'Indiana Grand',CBY:'Canterbury Park',CT:'Charles Town',CTM:'Century Mile',DED:'Delta Downs',EDR:'Energy Downs',EMD:'Emerald Downs'};return m[c]||c+' Raceway';}
 function fmtDate(d){if(d&&d.length===8)return d.slice(4,6)+'/'+d.slice(6,8)+'/'+d.slice(0,4);return d||'';}
+// ===== RANKINGS PUBLISHER — overrides the earlier _printPublicSheet =====
+function _printPublicSheet(allTrackResults) {
+  var btn = document.getElementById('rankingsBtn');
+  function done(msg, isErr) {
+    btn.disabled = false;
+    btn.textContent = '\uD83D\uDCCB Rankings';
+    showStatus(msg, !!isErr);
+  }
+
+  if (!PUBLIC_DRIVE_URL) { done('PUBLIC_DRIVE_URL is not set.', true); return; }
+
+  var masterDate = '';
+  if (allTrackResults.length && allTrackResults[0].raceData.length) {
+    var r0 = allTrackResults[0].raceData[0];
+    masterDate = r0.raceDate ? fmtDate(r0.raceDate) : new Date().toLocaleDateString();
+  }
+
+  var stamp = new Date().toISOString();
+  var payload = { generated: stamp, date: masterDate, tracks: [] };
+  var raceCount = 0;
+
+  allTrackResults.forEach(function(t) {
+    var entry = { code: t.code, name: t.label, races: [] };
+    Object.keys(t.sims).map(Number).sort(function(a,b){return a-b;}).forEach(function(idx) {
+      var race = t.raceData[idx], res = t.sims[idx];
+      if (!race || !res) return;
+      var hs = res.horses, TOT = res.TOTAL, pa = res.paceAnalysis;
+      var sf = race.surface === 'T' ? 'Turf' : race.surface === 'D' ? 'Dirt' : (race.surface || '');
+
+      var qW = calibrateProbs(hs.map(function(h,i){ return res.wins[i]/TOT*100; }));
+      var qP = calibrateProbs(hs.map(function(h,i){ return res.places[i]/TOT*100; }));
+
+      var ranked = hs.map(function(h,i){
+        var r = Object.assign({}, h);
+        r.winPct = qW[i]; r.placePct = qP[i];
+        return r;
+      }).filter(function(h){ return !h.scratched; })
+        .sort(function(a,b){ return b.winPct - a.winPct; });
+
+      var valueFlag = false;
+      if (ranked.length && race.surface !== 'T') {
+        var fav = ranked.slice().sort(function(a,b){ return oddsToProb(b.odds) - oddsToProb(a.odds); })[0];
+        var imp = oddsToProb(ranked[0].odds) * 100;
+        if (fav && fav.pp !== ranked[0].pp && imp > 0 && ranked[0].winPct >= 2 * imp) valueFlag = true;
+      }
+
+      entry.races.push({
+        race: race.race,
+        dist: race.dist || '',
+        surface: sf,
+        purse: race.purse ? parseInt(race.purse) : null,
+        cls: (race.stkorclm || '').toUpperCase(),
+        pace: pa ? pa.scenario : '',
+        paceDesc: pa ? _pubPaceDesc(pa) : '',
+        rankings: ranked.map(function(h, ri) {
+          var rank = ri + 1;
+          var style = h.styleBucket || '';
+          if (!style) {
+            var erl = (h.pstyerl != null) ? h.pstyerl : ((h.pallstyerl != null) ? h.pallstyerl : null);
+            if (erl !== null) {
+              style = erl <= 2.0 ? 'WIRE' : erl <= 3.5 ? 'PRESSER' :
+                      erl <= 5.5 ? 'STALKER' : erl <= 7.0 ? 'CLOSER' : 'DEEP';
+            }
+          }
+          return {
+            rank: rank, pp: h.pp, name: h.name,
+            jockey: h.jn || '', trainer: h.tn || '',
+            ml: h.odds || '',
+            fair: h.winPct > 0 ? fairOdds(h.winPct) : null,
+            win: h.winPct || 0, place: h.placePct || 0,
+            style: style,
+            value: (rank === 1 && valueFlag),
+            longshot: _pubIsWatch(h, rank),
+            debut: (h.lts === 0)
+          };
+        }),
+        scratched: race.horses.filter(function(h){ return h.scratched; })
+                              .map(function(h){ return { pp: h.pp, name: h.name }; })
+      });
+      raceCount++;
+    });
+    payload.tracks.push(entry);
+  });
+
+  if (!raceCount) { done('No simulated races to publish.', true); return; }
+
+  btn.textContent = '\u23F3 Publishing ' + raceCount + ' races...';
+
+  fetch(PUBLIC_DRIVE_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    keepalive: true,
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ type: 'rankings', data: payload })
+  }).then(function() {
+    btn.textContent = '\u23F3 Verifying...';
+    return new Promise(function(res){ setTimeout(res, 2500); });
+  }).then(function() {
+    var sep = PUBLIC_DRIVE_URL.indexOf('?') >= 0 ? '&' : '?';
+    return fetch(PUBLIC_DRIVE_URL + sep + 'type=rankings&cb=' + Date.now(), { cache: 'no-store' });
+  }).then(function(r) {
+    return r.json();
+  }).then(function(live) {
+    if (live && live.generated === stamp) {
+      done('\u2713 Published ' + raceCount + ' races. Site is live.');
+    } else {
+      done('Uploaded, but Drive still shows older data. Wait 10s and refresh the site.', true);
+    }
+  }).catch(function(err) {
+    done('Upload sent but could not verify: ' + err.message, true);
+  });
+}
 </script>
 </body>
 </html>
