@@ -1737,26 +1737,32 @@ function _printPublicSheet(allTrackResults) {
     payload.tracks.push(trackEntry);
   });
 
-  if (!PUBLIC_DRIVE_URL) {
+  var jsonStr = JSON.stringify(payload, null, 2);
+  var blob = new Blob([jsonStr], {type:'application/json'});
+  var url  = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'rankings-' + masterDate.replace(/\//g,'-') + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  if (PUBLIC_DRIVE_URL) {
+    btn.textContent = '\u23f3 Publishing...';
+    fetch(PUBLIC_DRIVE_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({type:'rankings', data:payload})
+    }).then(function() {
+      btn.disabled = false; btn.textContent = '\uD83D\uDCCB Rankings';
+      showStatus('Rankings published \u2713  Refresh your site to see the update.');
+    }).catch(function(e) {
+      btn.disabled = false; btn.textContent = '\uD83D\uDCCB Rankings';
+      showStatus('Publish failed: ' + e.message, true);
+    });
+  } else {
     btn.disabled = false; btn.textContent = '\uD83D\uDCCB Rankings';
-    showStatus('PUBLIC_DRIVE_URL not set \u2014 nothing published.', true);
-    return;
+    showStatus('JSON downloaded. Set PUBLIC_DRIVE_URL to auto-publish.');
   }
-
-  btn.textContent = '\u23f3 Publishing...';
-  fetch(PUBLIC_DRIVE_URL, {
-    method: 'POST', mode: 'no-cors', keepalive: true,
-    headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify({type:'rankings', data:payload})
-  }).then(function() {
-    btn.disabled = false; btn.textContent = '\uD83D\uDCCB Rankings';
-    showStatus('Published \u2713 ' + payload.tracks.length + ' track(s). Refresh your site.');
-  }).catch(function(err) {
-    btn.disabled = false; btn.textContent = '\uD83D\uDCCB Rankings';
-    showStatus('Publish failed: ' + err.message, true);
-  });
 }
-
 // ===== RUN ALL AND PRINT =====
 function runAllAndPrint(){
   var btn=document.getElementById('printAllBtn');
