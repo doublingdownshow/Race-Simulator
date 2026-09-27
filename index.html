@@ -289,8 +289,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v3.6';
-var BUILD_STAMP   = '2026-08-06 · desktop legibility';
+var BUILD_VERSION = 'v3.7';
+var BUILD_STAMP   = '2026-08-06 · multi-track publish fix';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -2141,17 +2141,42 @@ function _printPublicSheet(allTrackResults) {
 
   if (!raceCount) { done('No simulated races to publish.', true); return; }
 
-  btn.textContent = '\u23F3 Publishing ' + raceCount + ' races...';
+  var body = JSON.stringify({ type: 'rankings', data: payload });
+  var kb = (body.length / 1024).toFixed(1);
+  btn.textContent = '\u23F3 Publishing ' + raceCount + ' races (' + kb + ' KB)...';
 
-  fetch(PUBLIC_DRIVE_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    keepalive: true,
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ type: 'rankings', data: payload })
-  }).then(function() {
-    btn.textContent = '\u23F3 Verifying...';
-    return new Promise(function(res){ setTimeout(res, 2500); });
+  /* NOTE — `keepalive: true` was removed here in v3.7.
+     The Fetch spec caps keepalive request bodies at 64 KB, counted across all
+     in-flight keepalive requests. One track is ~27 KB and fits; two tracks are
+     ~53 KB and sit right on the edge; three are ~80 KB and are over it. When
+     the cap is exceeded the browser throws a TypeError SYNCHRONOUSLY, so the
+     .then()/.catch() chain below never runs at all — no "Verifying", no button
+     reset, no error. That is exactly the multi-track symptom.
+     keepalive only matters for requests that must survive page unload, which
+     this one does not, so dropping it costs nothing. The whole chain is also
+     wrapped in try/catch now, so a synchronous throw can never again fail
+     silently. */
+  var chain;
+  try {
+    chain = fetch(PUBLIC_DRIVE_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: body
+    });
+  } catch (err) {
+    done('Upload failed before sending (' + kb + ' KB): ' + err.message, true);
+    return;
+  }
+
+  var stage = 'publish';
+  chain.then(function() {
+    /* larger multi-track payloads take Apps Script longer to write to Drive,
+       so scale the wait with the payload instead of a flat 2.5s */
+    stage = 'verify';
+    var waitMs = Math.min(9000, 2500 + body.length / 12);
+    btn.textContent = '\u23F3 Verifying (' + Math.round(waitMs/1000) + 's)...';
+    return new Promise(function(res){ setTimeout(res, waitMs); });
   }).then(function() {
     var sep = PUBLIC_DRIVE_URL.indexOf('?') >= 0 ? '&' : '?';
     return fetch(PUBLIC_DRIVE_URL + sep + 'type=rankings&cb=' + Date.now(), { cache: 'no-store' });
@@ -2161,10 +2186,28 @@ function _printPublicSheet(allTrackResults) {
     if (live && live.generated === stamp) {
       done('\u2713 Published ' + raceCount + ' races. Site is live.');
     } else {
-      done('Uploaded, but Drive still shows older data. Wait 10s and refresh the site.', true);
+      done('Uploaded ' + payload.tracks.length + ' track(s), ' + kb +
+           ' KB, but Drive still shows older data. Wait 10s and refresh the site. ' +
+           'If this repeats only on multi-track runs, the Apps Script write is timing out.', true);
     }
   }).catch(function(err) {
-    done('Upload sent but could not verify: ' + err.message, true);
+    /* Distinguish the two requests. They fail for completely different reasons
+       and mean completely different things:
+         publish = the POST never left. Nothing was written. Real failure.
+         verify  = the POST went out fine; only the read-back failed. The data
+                   has very likely published. The read-back is a GET in CORS
+                   mode, and Apps Script /exec answers with a 302 to
+                   script.googleusercontent.com which does not always carry
+                   CORS headers — so this leg can fail while the write succeeds. */
+    if (stage === 'publish') {
+      done('PUBLISH FAILED — nothing was written. ' + kb + ' KB, ' +
+           payload.tracks.length + ' track(s). ' + err.message, true);
+    } else {
+      done('Published ' + raceCount + ' races (' + kb + ' KB) — but the read-back ' +
+           'check could not run (' + err.message + '). This is usually a CORS ' +
+           'redirect on the verify GET, not a failed upload. Refresh the site in ' +
+           '10s and confirm the data is there.', true);
+    }
   });
 }
 
