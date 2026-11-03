@@ -172,7 +172,6 @@
       <button class="hdr-btn print-btn" id="printAllBtn" onclick="runAllAndPrint()" style="display:none">🖨 Print All Races</button>
       <button class="hdr-btn kids-btn" id="kidsSheetBtn" onclick="runAllAndPrintKids()" style="display:none">🌈 Kids Sheet</button>
       <button class="hdr-btn rankings-btn" id="rankingsBtn" onclick="runAllAndPrintPublic()" style="display:none">📋 Rankings</button>
-      <button class="hdr-btn young-btn" id="youngSheetBtn" onclick="runAllAndPrintYoung()" style="display:none">📊 Young Handicapper</button>
       <button class="hdr-btn" onclick="resetApp()">↩ New Files</button>
       <span class="badge sm">1,000 SIMULATIONS</span>
       <span class="badge" id="buildBadge" style="color:var(--muted);border:1px solid var(--border)" title="build marker — if this does not match the version you uploaded, your browser is serving a cached copy">—</span>
@@ -376,7 +375,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('printAllBtn').style.display='inline-block';
         document.getElementById('kidsSheetBtn').style.display='inline-block';
         document.getElementById('rankingsBtn').style.display='inline-block';
-        document.getElementById('youngSheetBtn').style.display='inline-block';
         var totalSc=raceData.reduce(function(s,r){return s+(r?r.horses.filter(function(h){return h.scratched;}).length:0);},0);
         if(totalSc>0){var sb=document.getElementById('scBadge');sb.style.display='inline-block';sb.textContent='✂ '+totalSc+' SCRATCHES';}
         buildNav();selectRace(0);
@@ -757,7 +755,6 @@ function startApp(){
   document.getElementById('printAllBtn').style.display='inline-block';
   document.getElementById('kidsSheetBtn').style.display='inline-block';
   document.getElementById('rankingsBtn').style.display='inline-block';
-  document.getElementById('youngSheetBtn').style.display='inline-block';
   renderTrackTabs();
   var totalSc=raceData.reduce(function(s,r){return s+(r?r.horses.filter(function(h){return h.scratched;}).length:0);},0);
   document.getElementById('trackBadge').textContent=tc;
@@ -772,7 +769,6 @@ function resetApp(){
   document.getElementById('printAllBtn').style.display='none';
   document.getElementById('kidsSheetBtn').style.display='none';
   document.getElementById('rankingsBtn').style.display='none';
-  document.getElementById('youngSheetBtn').style.display='none';
   document.getElementById('xmlInput').value='';
   document.getElementById('scratchInput').value='';
   var mn=safeLS('get',LS_MAIN_N),sn=safeLS('get',LS_SCRT_N);
@@ -1878,7 +1874,9 @@ function runAllAndPrintKids(){
   function runNext(){
     if(done>=total){
       if(btn){btn.disabled=false;btn.textContent='🌈 Kids Sheet';}
-      printKidsSheet();
+      /* Kids Sheet button now renders the Young Handicapper sheet.
+         To revert: change this one call back to printKidsSheet(). */
+      printYoungSheet();
       return;
     }
     var idx=raceIndices[done];
@@ -2123,33 +2121,6 @@ function yhRecord(h,distLbl){
   else if(dw>0)out+='<span class="yh-dist good">'+distLbl+': <b>'+dw+' win'+(dw===1?'':'s')+'</b> in '+ds+' ✓ likes this trip</span>';
   else out+='<span class="yh-dist meh">'+distLbl+': <b>0 wins</b> in '+ds+' tr'+(ds===1?'y':'ies')+'</span>';
   return out+'</div>';
-}
-
-function runAllAndPrintYoung(){
-  var btn=document.getElementById('youngSheetBtn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Building...';}
-  allSimResults={};
-  var raceIndices=[];
-  for(var i=0;i<raceData.length;i++){
-    var r=raceData[i];
-    if(r&&r.horses&&r.horses.filter(function(h){return !h.scratched;}).length>=2)raceIndices.push(i);
-  }
-  var total=raceIndices.length,done=0;
-  function runNext(){
-    if(done>=total){
-      if(btn){btn.disabled=false;btn.textContent='📊 Young Handicapper';}
-      printYoungSheet();
-      return;
-    }
-    var idx=raceIndices[done];
-    if(btn)btn.textContent='⏳ Race '+raceData[idx].race+' ('+(done+1)+'/'+total+')...';
-    simRace(idx,function(result){
-      if(result)allSimResults[idx]=result;
-      done++;
-      runNext();
-    });
-  }
-  runNext();
 }
 
 function printYoungSheet(){
