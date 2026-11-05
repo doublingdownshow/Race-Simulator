@@ -2029,21 +2029,39 @@ function yhStyleName(h){
 }
 /* ppSpd is stored newest-first by parseMain; the chart reads oldest -> newest. */
 function yhFigs(h){
-  var out=[];
+  var out=[],i;
   if(h.ppSpd&&h.ppSpd.length){
-    for(var i=0;i<h.ppSpd.length&&out.length<5;i++){
-      if(h.ppSpd[i]&&h.ppSpd[i]>0)out.push(h.ppSpd[i]);
+    for(i=0;i<h.ppSpd.length&&out.length<5;i++){
+      if(!h.ppSpd[i]||h.ppSpd[i]<=0)continue;
+      /* pps[i] is pushed in the same loop as ppSpd[i], so the finish position
+         is taken by the ORIGINAL index -- a skipped blank figure must not
+         shift the pairing. */
+      var pf=(h.pps&&h.pps[i]&&h.pps[i].positionfi>0)?h.pps[i].positionfi:null;
+      out.push({v:h.ppSpd[i],pos:pf});
     }
   }
   return out.reverse();
+}
+function yhOrd(n){
+  if(!n||n<1)return '';
+  var t=n%100;
+  if(t>=11&&t<=13)return n+'th';
+  var o=n%10;
+  return n+(o===1?'st':o===2?'nd':o===3?'rd':'th');
+}
+/* Index of the best figure shown. Ties go to the most recent running. */
+function yhBestIdx(f){
+  var bi=0,i;
+  for(i=0;i<f.length;i++){if(f[i].v>=f[bi].v)bi=i;}
+  return bi;
 }
 function yhPattern(f){
   var n=f.length,i;
   if(n===0)return null;
   if(n<3)return{arrow:'·',txt:'Only '+n+' race'+(n>1?'s':'')+' so far — not enough to see a pattern yet',cls:'yh-v-mixed'};
   var d=[],sum=0;
-  for(i=1;i<n;i++){d.push(f[i]-f[i-1]);sum+=Math.abs(f[i]-f[i-1]);}
-  var vol=sum/d.length,net=f[n-1]-f[0],allUp=true,allDn=true;
+  for(i=1;i<n;i++){d.push(f[i].v-f[i-1].v);sum+=Math.abs(f[i].v-f[i-1].v);}
+  var vol=sum/d.length,net=f[n-1].v-f[0].v,allUp=true,allDn=true;
   for(i=0;i<d.length;i++){if(d[i]<=0)allUp=false;if(d[i]>=0)allDn=false;}
   if(vol>=7&&Math.abs(net)<vol*1.2)return{arrow:'↕',txt:'Up and down — hard to trust',cls:'yh-v-mixed'};
   if(allUp)return{arrow:'↗',txt:'Getting faster every race',cls:'yh-v-up'};
@@ -2058,7 +2076,7 @@ function yhPattern(f){
 function yhFigRange(ranked){
   var lo=Infinity,hi=-Infinity;
   ranked.forEach(function(h){
-    yhFigs(h).forEach(function(v){if(v<lo)lo=v;if(v>hi)hi=v;});
+    yhFigs(h).forEach(function(o){if(o.v<lo)lo=o.v;if(o.v>hi)hi=o.v;});
   });
   if(lo===Infinity)return null;
   return{lo:lo-4,hi:hi+1};
