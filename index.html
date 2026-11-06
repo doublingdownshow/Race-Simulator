@@ -111,15 +111,16 @@
 .hc-nums{display:flex;gap:20px;align-items:flex-end}
 .hc-big{font-family:Georgia,serif;font-size:28px;font-weight:700;line-height:1}
 .hc-lbl{font-family:monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-top:2px}
-.hc-ps{margin-left:auto;text-align:right;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.6}
-.hc-strip{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--border);border-right:none}
-.hc-cell{text-align:center;padding:4px 2px;border-right:1px solid var(--border)}
-.hc-cv{font-family:monospace;font-size:12px;color:var(--white);min-height:18px}
-.hc-cl{font-family:monospace;font-size:8px;letter-spacing:1.5px;color:var(--muted);margin-top:3px}
+.hc-ps{margin-left:auto;text-align:right;font-family:monospace;font-size:13px;color:var(--muted);line-height:1.5}
+.hc-strip{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--border);border-right:none;align-self:center}
+.hc-cell{text-align:center;padding:2px 2px;border-right:1px solid var(--border)}
+.hc-cv{font-family:monospace;font-size:16px;font-weight:700;color:var(--white);min-height:22px;line-height:22px;white-space:nowrap}
+.hc-cv.hc-odds{font-size:20px}
+.hc-cl{font-family:monospace;font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-top:1px}
 .hc.rest .hc-big{font-size:24px}
 .hc-scr{font-family:monospace;font-size:11px;color:var(--red-b);background:var(--scratch);border:1px solid var(--scratch-b);padding:7px 12px;margin-bottom:6px;opacity:.8}
 @media(max-width:1000px){.hc-body{grid-template-columns:1fr;gap:7px}}
-@media(max-width:600px){.hc{padding:8px 10px}.hc-big{font-size:24px}.hc.rest .hc-big{font-size:21px}.hc-pp{width:32px;height:32px;min-width:32px;font-size:17px}.hc-name{font-size:16px}.hc-jt{font-size:10px}}
+@media(max-width:600px){.hc-cv{font-size:14px}.hc-cv.hc-odds{font-size:17px}.hc-cl{font-size:8px;letter-spacing:1px}.hc{padding:8px 10px}.hc-big{font-size:24px}.hc.rest .hc-big{font-size:21px}.hc-pp{width:32px;height:32px;min-width:32px;font-size:17px}.hc-name{font-size:16px}.hc-jt{font-size:10px}}
 </style>
 </head>
 <body>
@@ -6813,8 +6814,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.1';
-var BUILD_STAMP   = '2026-11-06 · Equibase Engine v2.26 scoring · consensus single flag';
+var BUILD_VERSION = 'v4.2';
+var BUILD_STAMP   = '2026-11-06 · Equibase Engine v2.26 · consensus flag · auto-simulate';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -7430,7 +7431,8 @@ function selectRace(idx){
   document.getElementById('placeholder').style.display='block';
   document.getElementById('results').style.display='none';
   document.getElementById('runBtn').disabled=act.length<2;
-  if(allSimResults[idx]){simResults=allSimResults[idx];renderResults();}
+  if(allSimResults[idx]){simResults=allSimResults[idx];document.getElementById('placeholder').style.display='none';renderResults();}
+  else if(act.length>=2){document.getElementById('placeholder').style.display='none';document.getElementById('progWrap').style.display='block';document.getElementById('progBar').style.width='60%';document.getElementById('progLbl').textContent='SIMULATING...';autoSimAll();}
   idbSaveSession();
 }
 
@@ -8388,7 +8390,7 @@ function engineFlagHtml(d){
   return out;
 }
 
-function runSim(){
+function _runSimOld(){
   var btn=document.getElementById('runBtn');btn.disabled=true;
   document.getElementById('placeholder').style.display='none';
   document.getElementById('results').style.display='none';
@@ -8558,10 +8560,10 @@ function kidWhy(h,rank,fieldSize){
   return reasons[0].t;
 }
 
-function runAllAndPrintKids(){
+function runAllAndPrintKids(){_bgPause++;_whenIdle(function(){_runAllAndPrintKidsRaw();});}
+function _runAllAndPrintKidsRaw(){
   var btn=document.getElementById('kidsSheetBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Building...';}
-  allSimResults={};
   var raceIndices=[];
   for(var i=0;i<raceData.length;i++){
     var r=raceData[i];
@@ -8573,10 +8575,11 @@ function runAllAndPrintKids(){
       if(btn){btn.disabled=false;btn.textContent='🌈 Kids Sheet';}
       /* Kids Sheet button now renders the Young Handicapper sheet.
          To revert: change this one call back to printKidsSheet(). */
-      printYoungSheet();
+      _bgPause--;printYoungSheet();autoSimAll();
       return;
     }
     var idx=raceIndices[done];
+    if(allSimResults[idx]){done++;runNext();return;}
     if(btn)btn.textContent='⏳ Race '+raceData[idx].race+' ('+(done+1)+'/'+total+')...';
     simRace(idx,function(result){
       if(result)allSimResults[idx]=result;
@@ -9037,12 +9040,13 @@ function _pubPaceDesc(pa) {
   return extras[pa.scenario] || pa.scenarioDesc || '';
 }
 
-function runAllAndPrintPublic() {
+function runAllAndPrintPublic(){_bgPause++;_whenIdle(function(){_runAllAndPrintPublicRaw();});}
+function _runAllAndPrintPublicRaw() {
   var btn = document.getElementById('rankingsBtn');
   btn.disabled = true; btn.textContent = '⏳ Building rankings...';
 
   var trackCodes = Object.keys(trackStore);
-  if (trackCodes.length === 0) { btn.disabled = false; btn.textContent = '📋 Rankings'; showStatus('No tracks loaded', true); return; }
+  if (trackCodes.length === 0) { btn.disabled = false; btn.textContent = '📋 Rankings'; _bgPause--; showStatus('No tracks loaded', true); return; }
 
   var allTrackResults = [];
   var savedRaceData = raceData;
@@ -9054,7 +9058,9 @@ function runAllAndPrintPublic() {
       raceData = savedRaceData;
       currentTrack = savedCurrentTrack;
       btn.disabled = false; btn.textContent = '📋 Rankings';
+      _bgPause--;
       _printPublicSheet(allTrackResults);
+      autoSimAll();
       return;
     }
     var code = trackCodes[ti];
@@ -9237,10 +9243,10 @@ function _printPublicSheet(allTrackResults) {
 }
 
 // ===== RUN ALL AND PRINT =====
-function runAllAndPrint(){
+function runAllAndPrint(){_bgPause++;_whenIdle(function(){_runAllAndPrintRaw();});}
+function _runAllAndPrintRaw(){
   var btn=document.getElementById('printAllBtn');
   btn.disabled=true;btn.textContent='⏳ Simulating all races...';
-  allSimResults={};
   var raceIndices=[];
   for(var i=0;i<raceData.length;i++){
     var r=raceData[i];
@@ -9250,10 +9256,11 @@ function runAllAndPrint(){
   function runNext(){
     if(done>=total){
       btn.disabled=false;btn.textContent='🖨 Print All Races';
-      printAllResults();
+      _bgPause--;printAllResults();autoSimAll();
       return;
     }
     var idx=raceIndices[done];
+    if(allSimResults[idx]){done++;runNext();return;}
     btn.textContent='⏳ Simulating Race '+raceData[idx].race+' ('+(done+1)+'/'+total+')...';
     simRace(idx,function(result){
       if(result)allSimResults[idx]=result;
@@ -9532,7 +9539,7 @@ function renderFieldCards(ranked,race){
   var BK={WIRE:['Early','#e07030'],PRESSER:['Presser','#d0a030'],STALKER:['Mid','#a0c030'],CLOSER:['Closer','#30a080'],DEEP:['Deep Cl','#3080c0'],UNKNOWN:['—','var(--muted)']};
   var TOP=[['WIN PICK','#c9a84c'],['PLACE PICK','#88aad0'],['SHOW PICK','#52b788']];
   function box(v,c,t){return '<span style="border:2px solid '+c+';padding:0 6px;color:'+c+';font-weight:700"'+(t?' title="'+t+'"':'')+'>'+v+'</span>';}
-  function cell(l,v){return '<div class="hc-cell"><div class="hc-cv">'+v+'</div><div class="hc-cl">'+l+'</div></div>';}
+  function cell(l,v,big){return '<div class="hc-cell"><div class="hc-cv'+(big?' hc-odds':'')+'">'+v+'</div><div class="hc-cl">'+l+'</div></div>';}
   var favH=act.slice().sort(function(a,b){return oddsToProb(b.odds)-oddsToProb(a.odds);})[0];
   var html='';
   act.forEach(function(h,i){
@@ -9557,8 +9564,8 @@ function renderFieldCards(ranked,race){
           '<div><div class="hc-big" style="color:var(--white)">'+h.winPct+'%</div><div class="hc-lbl">WIN</div></div>'+
           '<div class="hc-ps">PLACE <span style="color:#88aad0">'+h.placePct+'%</span><br>SHOW <span style="color:#52b788">'+h.showPct+'%</span></div></div>'+
         '<div class="hc-strip">'+
-          cell('ODDS','<span style="color:var(--gold)">'+h.odds+'</span>')+
-          cell('FAIR','<span style="color:var(--gold-d)">'+(h.winPct>0?fairOdds(h.winPct):'—')+'</span>')+
+          cell('ODDS','<span style="color:var(--gold)">'+h.odds+'</span>',1)+
+          cell('FAIR','<span style="color:var(--gold-d)">'+(h.winPct>0?fairOdds(h.winPct):'—')+'</span>',1)+
           cell('STYLE','<span style="color:'+bk[1]+'">'+bk[0]+'</span>')+
           cell('QSP',e.qsp!==undefined&&e.qsp!==null?e.qsp:'—')+cell('DAYS',days)+cell('AVG CLS',ac)+
         '</div></div></div>';
@@ -9567,6 +9574,67 @@ function renderFieldCards(ranked,race){
     html+='<div class="hc-scr">✂ SCRATCHED — #'+h.pp+' '+h.name+(h.scratchReason?' ('+h.scratchReason+')':'')+'</div>';
   });
   wrap.innerHTML=html;
+}
+
+
+/* ═══ v4.1 AUTO-SIMULATE ════════════════════════════════════════════════
+   Every race on the loaded card simulates in the background (current race
+   first), one at a time. simRace uses shared globals, so only one run may be
+   in flight; Print All / Kids / Rankings pause the background runner. */
+var _simInFlight=false,_bgPause=0,_bgRunning=false,_bgSkip={},_bgSkipStore=null;
+function _whenIdle(fn){if(!_simInFlight){fn();return;}setTimeout(function(){_whenIdle(fn);},40);}
+function _activeCount(r){return (r&&r.horses)?r.horses.filter(function(h){return !h.scratched;}).length:0;}
+function _runExclusive(idx,cb){
+  _whenIdle(function(){
+    var store=allSimResults,rd=raceData;_simInFlight=true;
+    simRace(idx,function(res){
+      _simInFlight=false;
+      var valid=(store===allSimResults&&rd===raceData);
+      if(res&&valid)allSimResults[idx]=res;
+      cb(res,valid);
+    });
+  });
+}
+function _showCurrent(res){
+  simResults=res;
+  document.getElementById('progWrap').style.display='none';
+  document.getElementById('placeholder').style.display='none';
+  renderResults();
+  try{idbSaveSession();}catch(e){}
+}
+function autoSimAll(){
+  if(_bgRunning)return;_bgRunning=true;
+  (function step(){
+    if(_bgPause||!raceData||!raceData.length){_bgRunning=false;return;}
+    if(_bgSkipStore!==allSimResults){_bgSkip={};_bgSkipStore=allSimResults;}
+    var idx=-1;
+    if(raceData[currentRace]&&!allSimResults[currentRace]&&!_bgSkip[currentRace]&&_activeCount(raceData[currentRace])>=2)idx=currentRace;
+    else for(var i=0;i<raceData.length;i++){if(raceData[i]&&!allSimResults[i]&&!_bgSkip[i]&&_activeCount(raceData[i])>=2){idx=i;break;}}
+    if(idx<0){_bgRunning=false;return;}
+    _runExclusive(idx,function(res,valid){
+      if(valid&&!res)_bgSkip[idx]=1;
+      if(valid&&res&&idx===currentRace&&!simResults)_showCurrent(res);
+      setTimeout(step,0);
+    });
+  })();
+}
+function runSim(){
+  var race=raceData[currentRace];
+  if(!race||!race.horses){showStatus('No race data',true);return;}
+  if(allSimResults[currentRace]){_showCurrent(allSimResults[currentRace]);return;}
+  var btn=document.getElementById('runBtn');btn.disabled=true;
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('progWrap').style.display='block';
+  document.getElementById('progBar').style.width='60%';
+  document.getElementById('progLbl').textContent='SIMULATING...';
+  var want=currentRace;
+  _runExclusive(want,function(res){
+    btn.disabled=false;
+    if(want!==currentRace)return;
+    document.getElementById('progWrap').style.display='none';
+    if(!res){showStatus('Race has fewer than 2 active horses',true);return;}
+    _showCurrent(res);
+  });
 }
 
 function renderResults(){
