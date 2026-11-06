@@ -6813,8 +6813,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.0';
-var BUILD_STAMP   = '2026-11-05 · Equibase Engine v2.26 scoring';
+var BUILD_VERSION = 'v4.1';
+var BUILD_STAMP   = '2026-11-06 · Equibase Engine v2.26 scoring · consensus single flag';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8182,10 +8182,12 @@ function simRace(raceIdx, cb){
 
   /* v4.0 — replace the v3 weights with Equibase Engine v2.26 scores */
   if(EM){
+    var _v3w=weights.slice();   /* v4.1 — keep the simulator's own v3 weights for the consensus flag */
     var es=horses.map(function(h){var eh=EM[_eqbKey(h.name)];return eh?eh.FinalScoreWithFAST:null;}).filter(function(v){return v!==null;});
     var mxs=es.length?Math.max.apply(null,es):0;
     horses.forEach(function(h,i){
       var eh=EM[_eqbKey(h.name)],d=engineDetail[i];
+      d.v3w=_v3w[i];
       if(!eh){weights[i]=1e-6;d.score=0;d.scoreRaw=-1e9;d.engRank=999;d.src='engine';d.flags='';return;}
       weights[i]=Math.exp((eh.FinalScoreWithFAST-mxs)/ENGINE_T);
       d.score=Math.round(eh.FinalScoreWithFAST*10)/10;
@@ -9332,6 +9334,7 @@ function printAllResults(){
       var pT=function(L){var l=pTI.rows.filter(function(r){return r.tier===L;});return l.length?l.map(function(r){return '#'+r.h.pp+' '+r.h.name;}).join(', '):'—';};
       html+='<div style="font-family:Courier New,monospace;font-size:9px;border:1px solid #c0c0b0;padding:5px 8px;margin-bottom:8px;line-height:1.6">'+
         '<b>TICKET</b> · <b>A:</b> '+pT('A')+' · <b>B:</b> '+pT('B')+' · <b>C:</b> '+pT('C')+'<br>'+
+        (pTI.cons?'<b>✅ CONSENSUS SINGLE: #'+pTI.cons.pp+' '+pTI.cons.name+'</b><br>':'')+
         '<b>WIDTH: '+pTI.label+'</b>'+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10</div>';
     }
     var pActiveNotes=pa.horseNotes.filter(function(n){return n.erl&&n.erl>0;});
@@ -9459,7 +9462,16 @@ function ticketInfo(res,ranked){
   var col=label==='FOCUSED'?'var(--green-b)':label==='STANDARD'?'var(--gold)':'#d0803a';
   var note=label==='FOCUSED'?'In races like this the model\'s top 3 caught the winner 71% of the time (51 test races).':label==='STANDARD'?'Most races land here. The model\'s top 3 caught the winner 61% of the time (126 test races).':'Rare (about 1 race in 8). The model\'s top 3 caught the winner only 32% of the time (25 test races) — go wide or pass.';
   var rl=(ranked[0]&&ranked[0].eng&&ranked[0].eng.raceLabel)||'';
-  return {rows:rows,k50:k50,k65:k65,k80:k80,label:label,col:col,note:note,raceLabel:rl};
+  /* v4.1 CONSENSUS SINGLE: engine #1 is also the simulator's own #1 and the morning-line favourite.
+     Fall test (401 races): won 42% (111 races); with 2 horses 58%, 3 horses 71%. Forward test from Nov 6 2026. */
+  var cons=null;
+  if(rows.length>1){
+    var eTop=rows[0].h,sTop=null,sBest=-1,mTop=null,mBest=-1,mTie=false;
+    rows.forEach(function(r){var d=res.engineDetail[r.h.idx]||{};var v=(d.v3w===undefined)?-1:d.v3w;if(v>sBest){sBest=v;sTop=r.h;}
+      var q=oddsToProb(r.h.odds);if(q>mBest+1e-9){mBest=q;mTop=r.h;mTie=false;}else if(Math.abs(q-mBest)<=1e-9)mTie=true;});
+    if(sTop===eTop&&mTop===eTop&&!mTie&&sBest>0)cons=eTop;
+  }
+  return {rows:rows,k50:k50,k65:k65,k80:k80,label:label,col:col,note:note,raceLabel:rl,cons:cons};
 }
 function _tbPP(h){return '<span class="pp-box" style="background:'+kidPostColor(h.pp)+';color:'+kidPostTextColor(h.pp)+(h.pp==2||h.pp==18?';border-color:#8a8a7a':'')+'">'+h.pp+'</span>';}
 function renderTicketBuilder(res,ranked){
@@ -9503,7 +9515,10 @@ function renderTicketBuilder(res,ranked){
   });
   cols+='</div>';
   var foot='<div style="font-family:monospace;font-size:9px;color:var(--muted);margin-top:8px;padding:0 6px;line-height:1.6">A/B/C are the Equibase engine\'s own grades. On 202 test races A+B caught 51% of winners with 2.5 horses per race on average — about the same as the model\'s top 2–3. A structuring aid for tickets, not a proven betting edge.</div>';
-  el.innerHTML=width+cols+foot;
+  var consHtml=t.cons?'<div style="background:var(--card);border:1px solid var(--green-b);border-left:5px solid var(--green-b);padding:10px 14px;margin-bottom:10px">'+
+    '<div style="font-family:monospace;font-size:13px;font-weight:700;color:var(--green-b);display:flex;align-items:center;gap:8px;flex-wrap:wrap">✅ CONSENSUS SINGLE '+_tbPP(t.cons)+'<span class="hn" style="font-size:13px">'+t.cons.name+'</span></div>'+
+    '<div style="font-family:monospace;font-size:10px;color:var(--text);margin-top:4px;line-height:1.6">Engine #1, simulator #1 and morning-line favourite all agree. In testing these won 42% alone (111 races) · 58% with 2 horses · 71% with 3.</div></div>':'';
+  el.innerHTML=consHtml+width+cols+foot;
 }
 
 
