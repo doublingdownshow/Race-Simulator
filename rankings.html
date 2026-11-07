@@ -59,11 +59,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .state-sub{font-size:14px;color:var(--muted);line-height:1.7;max-width:420px;}
 
 /* TRACK */
-.track-section{margin-bottom:38px;}
+.track-section{margin-bottom:12px;border:1px solid var(--border);border-radius:5px;background:var(--card);overflow:hidden;}
+.track-section .track-hdr{cursor:pointer;margin:0;padding:14px 16px;border-bottom:none;flex-wrap:wrap;row-gap:6px;-webkit-tap-highlight-color:rgba(212,180,92,.15);user-select:none;}
+.track-section .track-hdr:hover{background:rgba(212,180,92,.05);}
+.trk-chev{font-size:14px;color:var(--gold);transition:transform .2s;margin-left:6px;}
+.track-section.trk-closed .trk-chev{transform:rotate(-90deg);}
+.track-section.trk-closed .trk-body{display:none;}
+.trk-body{padding:0 16px 18px;border-top:1px solid var(--border);}
+.trk-chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.trk-chip{font-size:12px;color:var(--muted);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.trk-chip.cons{color:#6fe0a8;border-color:rgba(82,183,136,.6);background:rgba(82,183,136,.12);font-weight:700;}
+.trk-chip.wxg{color:var(--text);}
+.trk-wx{margin:0 -16px 14px;}
+.trk-wx .wx-track{border-bottom:1px solid var(--border);}
+.trk-hint{font-size:12px;color:var(--muted);text-align:center;margin:4px 0 14px;}
 .track-hdr{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:13px;border-bottom:1px solid var(--border);}
 .track-badge{background:var(--gold);color:#0a0a08;font-size:13px;font-weight:700;letter-spacing:1.5px;padding:5px 11px;text-transform:uppercase;border-radius:3px;}
 .track-name{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--white);}
 .track-date{font-size:13px;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums;}
+.track-section .section-controls{margin-top:12px;}
 
 /* CONTROLS */
 .section-controls{display:flex;justify-content:flex-end;margin-bottom:11px;gap:8px;}
@@ -171,7 +185,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
   </div>
 </header>
 
-<div class="wx-bar" id="wxBar"><div class="wx-status">&#x26C5; Loading track weather&hellip;</div></div>
+<div class="wx-bar" id="wxBar" style="display:none"><div class="wx-status">&#x26C5; Loading track weather&hellip;</div></div>
 
 <div id="scLoading" class="state"><div class="state-icon">&#x1F3C7;</div><div class="state-title">Loading Today's Picks</div><div class="state-sub">Fetching rankings&hellip;</div></div>
 
@@ -325,6 +339,23 @@ function fetchWx(code){
     .then(function(d){return wxPanel(code,d);})
     .catch(function(){return '';});
 }
+function fetchWxData(code){
+  var loc=TRACKS[code];
+  if(!loc)return Promise.resolve(null);
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.lat+'&longitude='+loc.lon+
+    '&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,weather_code,relative_humidity_2m'+
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max'+
+    '&past_days=1&forecast_days=2'+
+    '&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
+  return fetch(url).then(function(r){return r.json();}).catch(function(){return null;});
+}
+function _trkKey(code){return 'ddRankOpen_'+code;}
+function _trkGet(code){try{return localStorage.getItem(_trkKey(code));}catch(e){return null;}}
+function _trkSet(code,v){try{localStorage.setItem(_trkKey(code),v);}catch(e){}}
+function toggleTrack(sec){
+  sec.classList.toggle('trk-closed');
+  _trkSet(sec.getAttribute('data-code'),sec.classList.contains('trk-closed')?'0':'1');
+}
 function loadWeather(codes){
   var bar=document.getElementById('wxBar');
   Promise.all(codes.map(fetchWx)).then(function(ps){
@@ -368,14 +399,29 @@ function render(data){
     showScreen('scContent');return;
   }
 
-  loadWeather(data.tracks.map(function(t){return t.code;}));
+  var _single=data.tracks.length===1;
 
   data.tracks.forEach(function(track){
     var sec=document.createElement('div');
-    sec.className='track-section';
-    sec.innerHTML='<div class="track-hdr"><span class="track-badge">'+e(track.code)+'</span>'+
+    var nR=(track.races||[]).length,nC=(track.races||[]).filter(function(r){return r.consensus;}).length;
+    var saved=_trkGet(track.code);
+    var open=saved===null?_single:saved==='1';
+    sec.className='track-section'+(open?'':' trk-closed');
+    sec.setAttribute('data-code',track.code);
+    var hdr=document.createElement('div');
+    hdr.className='track-hdr';
+    hdr.innerHTML='<span class="track-badge">'+e(track.code)+'</span>'+
       '<span class="track-name">'+e(track.name)+'</span>'+
-      (data.date?'<span class="track-date">'+e(data.date)+'</span>':'')+'</div>'+
+      '<span class="trk-chips"><span class="trk-chip">'+nR+' race'+(nR===1?'':'s')+'</span>'+
+      (nC?'<span class="trk-chip cons">&#10003; '+nC+' consensus</span>':'')+
+      '<span class="trk-chip wxg" id="wxg-'+e(track.code)+'" style="display:none"></span></span>'+
+      (data.date?'<span class="track-date">'+e(data.date)+'</span>':'')+
+      '<span class="trk-chev">&#9660;</span>';
+    hdr.onclick=function(){toggleTrack(sec);};
+    sec.appendChild(hdr);
+    var body=document.createElement('div');
+    body.className='trk-body';
+    body.innerHTML='<div class="trk-wx" id="wxp-'+e(track.code)+'"></div>'+
       '<div class="section-controls">'+
         '<button class="ctrl-btn" onclick="ca(this)">&#9660; Collapse All</button>'+
         '<button class="ctrl-btn" onclick="ea(this)">&#9650; Expand All</button>'+
@@ -383,9 +429,21 @@ function render(data){
     var grid=document.createElement('div');
     grid.className='races-grid';
     (track.races||[]).forEach(function(race){grid.appendChild(buildCard(race,track));});
-    sec.appendChild(grid);
+    body.appendChild(grid);
+    sec.appendChild(body);
     root.appendChild(sec);
+    (function(code){
+      fetchWxData(code).then(function(d){
+        if(!d||!d.current)return;
+        var c=d.current,w=wxc(c.weather_code);
+        var g=document.getElementById('wxg-'+code);
+        if(g){g.innerHTML=w.i+' '+Math.round(c.temperature_2m)+'&deg;F';g.style.display='';}
+        var pnl=document.getElementById('wxp-'+code);
+        if(pnl){try{pnl.innerHTML=wxPanel(code,d);}catch(err){}}
+      });
+    })(track.code);
   });
+  if(!_single){var hint=document.createElement('div');hint.className='trk-hint';hint.textContent='Tap a track to see its weather and races';root.insertBefore(hint,root.firstChild);}
   showScreen('scContent');
 }
 
