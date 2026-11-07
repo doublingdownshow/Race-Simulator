@@ -6814,7 +6814,7 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.4';
+var BUILD_VERSION = 'v4.4.1';
 var BUILD_STAMP   = '2026-11-06 · Engine v2.26 · morning-line blend win % · consensus flag · auto-simulate · race arrows';
 
 function renderLockedPanel(){
@@ -9351,7 +9351,7 @@ function printAllResults(){
       html+='<div style="font-family:Courier New,monospace;font-size:9px;border:1px solid #c0c0b0;padding:5px 8px;margin-bottom:8px;line-height:1.6">'+
         '<b>TICKET</b> · <b>A:</b> '+pT('A')+' · <b>B:</b> '+pT('B')+' · <b>C:</b> '+pT('C')+'<br>'+
         (pTI.cons?'<b>✅ CONSENSUS SINGLE: #'+pTI.cons.pp+' '+pTI.cons.name+'</b><br>':'')+
-        '<b>WIDTH: '+pTI.label+'</b>'+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10</div>';
+        '<b>WIDTH: '+pTI.label+'</b>'+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10'+_printWidthBar(pTI)+'</div>';
     }
     var pActiveNotes=pa.horseNotes.filter(function(n){return n.erl&&n.erl>0;});
     if(pActiveNotes.length>0){
@@ -9689,6 +9689,18 @@ function _raceArrowsHtml(){
     b(p,-1,'◀ R'+(p>=0?raceData[p].race:''))+
     '<span style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--muted)">RACE '+(raceData[currentRace]?raceData[currentRace].race:'')+'</span>'+
     b(n,1,'R'+(n>=0?raceData[n].race:'')+' ▶')+'</div>';
+}
+
+
+/* v4.4.1 — print version of the race-width bar (A gold / B blue / C green / ungraded grey, post numbers, 50/65/80 marks) */
+function _printWidthBar(t){
+  var TC={A:'#c9a84c',B:'#6f9fd8',C:'#52b788','':'#d8d6cc'};
+  var h='<div style="display:flex;height:18px;border:1px solid #888;margin:4px 0 1px;-webkit-print-color-adjust:exact;print-color-adjust:exact">';
+  t.rows.forEach(function(r){var w=r.p*100;if(w<0.4)return;
+    h+='<div style="width:'+w.toFixed(2)+'%;background:'+TC[r.tier]+';border-right:1px solid #fff;display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace;font-size:9px;font-weight:700;color:#111;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+(w>=3?r.h.pp:'')+'</div>';});
+  h+='</div><div style="position:relative;height:10px;font-family:Courier New,monospace;font-size:7px;color:#555">';
+  [0.5,0.65,0.8].forEach(function(m){h+='<span style="position:absolute;left:'+(m*100)+'%;transform:translateX(-50%)">▲'+Math.round(m*100)+'%</span>';});
+  return h+'</div>';
 }
 
 function renderResults(){
