@@ -130,6 +130,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .badge{font-size:11px;font-weight:700;padding:2px 7px;letter-spacing:.3px;display:inline-block;border-radius:3px;}
 .b-value{background:rgba(196,154,224,.14);color:var(--value);border:1px solid rgba(196,154,224,.4);}
 .b-longshot{background:rgba(95,216,148,.12);color:var(--longshot);border:1px solid rgba(95,216,148,.35);}
+.b-cons{background:rgba(82,183,136,.18);color:#6fe0a8;border:1px solid rgba(82,183,136,.6);}
+.r-table tbody tr.cons td{background:rgba(82,183,136,.10)!important;border-top:2px solid #52b788;border-bottom:2px solid #52b788;}
+.r-table tbody tr.cons td:first-child{border-left:2px solid #52b788;}
+.r-table tbody tr.cons td:last-child{border-right:2px solid #52b788;}
+.rc-cons{display:inline-block;margin-left:8px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#6fe0a8;border:1px solid rgba(82,183,136,.6);background:rgba(82,183,136,.14);padding:1px 7px;border-radius:3px;}
 .b-debut{background:rgba(95,199,150,.12);color:var(--green-b);border:1px solid rgba(95,199,150,.32);}
 
 /* STYLE COLORS */
@@ -397,7 +402,7 @@ function buildCard(race,track){
   var h='<div class="rc-hdr" onclick="toggle(\''+id+'\')">'+
     '<span class="rc-num">RACE '+e(race.race)+'</span>'+
     '<div class="rc-info"><div class="rc-track-name">'+e(track.name)+'</div>'+
-    '<div class="rc-meta">'+cond+'</div></div>'+
+    '<div class="rc-meta">'+cond+(race.consensus?'<span class="rc-cons">&#10003; CONSENSUS #'+e(race.consensus)+'</span>':'')+'</div></div>'+
     '<div class="rc-toggle">&#9660;</div></div>';
 
   h+='<div class="rc-body">';
@@ -407,6 +412,7 @@ function buildCard(race,track){
     '<span style="color:#8cc63f"><b>&#9632;</b> Stalker</span>'+
     '<span style="color:#3ec9a0"><b>&#9632;</b> Closer</span>'+
     '<span style="color:#5b9bd5"><b>&#9632;</b> Deep Closer</span>'+
+    (race.consensus?'<span style="color:#6fe0a8"><b>&#10003;</b> Consensus = our model, our simulator and the morning line all pick the same horse</span>':'')+
     '<span style="margin-left:auto">1,000 simulations</span>'+
     '</div>';
 
@@ -422,10 +428,11 @@ function buildCard(race,track){
 
   (race.rankings||[]).forEach(function(hr){
     var sc=SC[hr.style]||'',bdg='';
+    if(hr.consensus)bdg+='<span class="badge b-cons">&#10003; Consensus</span>';
     if(hr.value)bdg+='<span class="badge b-value">&#9670; Value</span>';
     if(hr.longshot)bdg+='<span class="badge b-longshot">&#x26A1; Longshot</span>';
     if(hr.debut)bdg+='<span class="badge b-debut">&#9733; Debut</span>';
-    h+='<tr>'+
+    h+='<tr'+(hr.consensus?' class="cons"':'')+'>'+
       '<td><div class="rk-pp-cell"><span class="rk-n">'+hr.rank+'</span>'+
         '<span class="pp-chip" style="'+pps(hr.pp)+'">'+hr.pp+'</span></div></td>'+
       '<td><div class="h-name '+sc+'">'+e(hr.name)+'</div>'+(bdg?'<div class="h-badges">'+bdg+'</div>':'')+'</td>'+
