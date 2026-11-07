@@ -6814,8 +6814,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.4.1';
-var BUILD_STAMP   = '2026-11-06 · Engine v2.26 · morning-line blend win % · consensus flag · auto-simulate · race arrows';
+var BUILD_VERSION = 'v4.5';
+var BUILD_STAMP   = '2026-11-07 · Engine v2.26 · ML blend win % · consensus flag (site + Rankings) · auto-simulate';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -9132,6 +9132,7 @@ function _printPublicSheet(allTrackResults) {
       var pa = res.paceAnalysis;
       var sf = race.surface === 'T' ? 'Turf' : race.surface === 'D' ? 'Dirt' : (race.surface || '');
       var ranked = buildRanked(res).filter(function(h){ return !h.scratched; });
+      var _cons = null; try { _cons = ticketInfo(res, ranked).cons; } catch(e) {}
 
       var valueFlag = false;
       if (ranked.length && race.surface !== 'T') {
@@ -9148,6 +9149,7 @@ function _printPublicSheet(allTrackResults) {
         cls: (race.stkorclm || '').toUpperCase(),
         pace: pa ? pa.scenario : '',
         paceDesc: pa ? _pubPaceDesc(pa) : '',
+        consensus: _cons ? _cons.pp : null,
         rankings: ranked.map(function(h, ri) {
           var rank = ri + 1;
           var style = h.styleBucket || '';
@@ -9168,7 +9170,8 @@ function _printPublicSheet(allTrackResults) {
             style: style,
             value: (rank === 1 && valueFlag),
             longshot: _pubIsWatch(h, rank),
-            debut: (h.lts === 0)
+            debut: (h.lts === 0),
+            consensus: !!(_cons && _cons.pp === h.pp)
           };
         }),
         scratched: race.horses.filter(function(h){ return h.scratched; })
