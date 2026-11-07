@@ -6814,8 +6814,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.3.1';
-var BUILD_STAMP   = '2026-11-06 · Equibase Engine v2.26 · consensus flag + green race tabs · auto-simulate · race arrows';
+var BUILD_VERSION = 'v4.4';
+var BUILD_STAMP   = '2026-11-06 · Engine v2.26 · morning-line blend win % · consensus flag · auto-simulate · race arrows';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8010,6 +8010,7 @@ var SCENARIO_COLOR_V3={HOT_PACE:'#c05030',LONE_SPEED:'#30a060',CONTESTED_SPEED:'
    exp(score / ENGINE_T); ENGINE_T = 18 was fit on 100 June races and
    confirmed on 102 Oct/Nov races (log-loss best at 16-20).
    ═══════════════════════════════════════════════════════════════════════ */
+var ML_BLEND_ON=true;   /* v4.4 morning-line blend — set false to show engine-only win % */
 var ENGINE_T=18;
 var _eqbCache={};
 function _eqbWrap(el){
@@ -8208,6 +8209,13 @@ function simRace(raceIdx, cb){
       d.raceLabel=eh.RaceTypeLabel||'';
       d.src='engine';
     });
+  }
+  if(EM&&ML_BLEND_ON){
+    var _ws=0,_mlp=[],_mlS=0,_mlN=0;
+    horses.forEach(function(h,i){_ws+=weights[i];var q=(h.odds&&String(h.odds).indexOf('/')>0)?oddsToProb(h.odds):null;_mlp.push(q);if(q){_mlS+=q;_mlN++;}});
+    var _mlAvg=_mlN?_mlS/_mlN:0.1;
+    horses.forEach(function(h,i){var d=engineDetail[i];d.wEng=_ws>0?weights[i]/_ws:0;var q=_mlp[i]||_mlAvg;d.mlp=q;
+      weights[i]=(_ws>0&&weights[i]>0)?Math.pow(weights[i]/_ws,0.75)*Math.pow(q,0.5):weights[i];});
   }
   var n=horses.length,TOTAL=1000,CHUNK=50,simI=0;
   var wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
