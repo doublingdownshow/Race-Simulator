@@ -264,8 +264,18 @@ var EQB = (function () {
   var Logger = { log: function () {} };
   var __CAPTURE__ = null;
 // ============================================================
-//  EQUIBASE COMBINED ENGINE  v2.26
+//  EQUIBASE COMBINED ENGINE  v2.27
 //  Single-pass: Scratches → Pace → Raw → Form Cycle → ABC
+//
+//  CHANGES FROM v2.26 → v2.27  (Nov 10 2026) — ONE change, value label only
+//   OVERBET now means: a morning-line top-2 choice that the engine ranks 4th or worse.
+//   Old rule (engine % at T=28 more than 5 pts under the ML %) flagged 439 of 519 ML favourites
+//   because the T=28 % is too flat on favourites — those horses were no worse bets than anyone else.
+//   Development check, 519 fall races: new flag 332 horses (8%), won 56 vs 70.4 the ML expected,
+//   $2 win ROI −34% vs −15% for same-price unflagged horses (−39% vs −18% with top 2 stripped).
+//   Found after trying ~9 definitions on the same races, so it is ON PROBATION — forward test:
+//   claude/preregistered_test_overbet_rank.md. Scores, rankings and PRIME/VALUE tiers unchanged.
+//   Also feeds FADE FAVORITE (tournament pick). Switch: OVERBET_RANK_ON (false = v2.26 rule).
 //
 //  CHANGES FROM v2.25 → v2.26  (Nov 4 2026)
 //  40. FIELD-ANCHORED DEBUT SCORING (ported from simulator v3.2+).
@@ -456,6 +466,8 @@ const LIVE_FOLDER_ID = '1VGeFt8Z8NgK7HkQaOqT39LVnEAL0Zbqz';
 // v2.25: 'EARLY_INTENT' (default) or 'QUIRIN' (BRIS-aligned speed points)
 const QSP_MODE = 'EARLY_INTENT';
 
+// v2.27 switch
+var OVERBET_RANK_ON = true;
 // v2.26 switches
 const FTS_ANCHOR_ON = true;          // field-anchored debut scoring (false = v2.25 behaviour)
 const TURF_GRADED   = 'SYMMETRIC';   // 'SYMMETRIC' | 'POSITIVE' | 'OFF'
@@ -2179,6 +2191,10 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
   const expScores  = horseObjs.map(h => Math.exp((h.FinalScoreWithFAST || 0) / T_SOFTMAX));
   const sumExp     = expScores.reduce((a, b) => a + b, 0) || 1;
   const modelProbs = expScores.map(e => e / sumExp);
+  // v2.27 — OVERBET = a morning-line top-2 choice that the engine ranks 4th or worse
+  const _scs    = horseObjs.map(h => h.FinalScoreWithFAST || 0);
+  const engRk   = _scs.map(v => 1 + _scs.filter(w => w > v).length);
+  const mlRk    = horseObjs.map(h => h.Odds > 0 ? 1 + horseObjs.filter(o => o.Odds > 0 && o.Odds < h.Odds).length : 99);
 
   horseObjs.forEach(function(h, i) {
     const mktProb   = normMarket[i];
@@ -2200,8 +2216,8 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
     if      (edge >  0.10 && ev >  0.15 && odds >= 4) tier = `⭐⭐⭐ PRIME${pctLabel}`;
     else if (edge >  0.05 && ev >  0.05)               tier = `⭐⭐ VALUE${pctLabel}`;
     else if (edge >  0.02)                              tier = `⭐ SLIGHT${pctLabel}`;
-    else if (edge >= -0.05)                             tier = `FAIR${pctLabel}`;
-    else if (edge <  -0.05)                             tier = `❌ OVERBET${pctLabel}`;
+    else if (OVERBET_RANK_ON ? (mlRk[i] <= 2 && engRk[i] >= 4) : (edge < -0.05))
+                                                        tier = `❌ OVERBET${pctLabel}`;
     else                                                tier = `FAIR${pctLabel}`;
 
     h.ValueTier = tier;
@@ -6814,8 +6830,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.5';
-var BUILD_STAMP   = '2026-11-07 · Engine v2.26 · ML blend win % · consensus flag (site + Rankings) · auto-simulate';
+var BUILD_VERSION = 'v4.8';
+var BUILD_STAMP   = '2026-11-10 · Engine v2.27 (new OVERBET) · ranked by win % (ML blend) · ENGINE TOP tag · consensus flag · off-turf switch';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -7419,11 +7435,12 @@ function selectRace(idx){
   currentRace=idx;simResults=null;
   document.querySelectorAll('.race-btn').forEach(function(b,i){b.classList.toggle('active',i===idx);});
   var r=raceData[idx];if(!r)return;
+  _applyOff(r);
   document.getElementById('raceTitle').textContent='Race '+r.race;
   var act=r.horses.filter(function(h){return !h.scratched;}),sc=r.horses.filter(function(h){return h.scratched;});
   var sf=r.surface==='T'?'mp-turf':'mp-dirt',sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
   document.getElementById('raceMeta').innerHTML='<span class="mp mp-d">'+(r.dist||'?')+'</span><span class="mp '+sf+'">'+sl+'</span>'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+' <span class="mp mp-n">'+act.length+' ACTIVE</span>'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'');
-  document.getElementById('raceMeta').innerHTML+=renderTrustBadge(act.length,r.surface,trustRaceType(r),null);
+  document.getElementById('raceMeta').innerHTML+=renderTrustBadge(act.length,r.surface,trustRaceType(r),null)+_offTurfBtn(idx,r);
   var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
   if(sc.length){sl2.innerHTML=sc.map(function(h){return '<span class="sc-tag">PP'+h.pp+' '+h.name+(h.scratchReason?' · '+h.scratchReason:'')+'</span>';}).join('');sa.style.display='block';}else sa.style.display='none';
   var allChg=r.horses.filter(function(h){return !h.scratched&&h.changes&&h.changes.length>0;});
@@ -8029,7 +8046,7 @@ function _eqbKey(name){return String(name||'').trim().toUpperCase();}
 function engineForRace(race){
   if(!race||!race._el||typeof EQB==='undefined')return null;
   var sc=race.horses.filter(function(h){return h.scratched;}).map(function(h){return _eqbKey(h.name);}).sort();
-  var key=(race.track||'')+'|'+race.race+'|'+race.raceDate+'|'+sc.join(',');
+  var key=(race.track||'')+'|'+race.race+'|'+race.raceDate+'|'+sc.join(',')+(race.offTurf?'|OFFT':'');
   if(_eqbCache.hasOwnProperty(key))return _eqbCache[key];
   var trk=_eqbKey(race.track), rn=String(parseInt(race.race,10)||race.race);
   var set=new Set();
@@ -8042,11 +8059,15 @@ function engineForRace(race){
   }
   var cap=[],m=null;
   try{
-    EQB.run(_eqbWrap(race._el),set,nameMap,cap);
+    var _root=_eqbWrap(race._el);
+    if(race.offTurf){var _gc=_root.getChild,_gct=_root.getChildText;
+      _root.getChild=function(nm){if(nm==='surface')return {getText:function(){return 'D';},getChildren:function(){return [];},getChild:function(){return null;},getChildText:function(){return '';},getName:function(){return 'surface';},getAttribute:function(){return null;},getAttributes:function(){return [];}};return _gc.call(this,nm);};
+      _root.getChildText=function(nm){return nm==='surface'?'D':_gct.call(this,nm);};}
+    EQB.run(_root,set,nameMap,cap);
     m={};cap.forEach(function(h){m[_eqbKey(h.HorseName)]=h;});
     m.__scenario=cap.length?cap[cap.length-1].PaceScenario:null;
   }catch(e){
-    if(window.console)console.error('Engine v2.26 failed on race '+race.race+':',e);
+    if(window.console)console.error('Engine v2.27 failed on race '+race.race+':',e);
     m=null;
   }
   _eqbCache[key]=m;
@@ -8068,6 +8089,7 @@ function _plExact(w){
 }
 function simRace(raceIdx, cb){
   var race=raceData[raceIdx];
+  _applyOff(race);
   if(!race||!race.horses){cb(null);return;}
   _activeSurf=(race&&race.surface)||'';
   var horses=race.horses.filter(function(h){return !h.scratched;});
@@ -8362,15 +8384,15 @@ function separationBadge(scores){
 /* v4.0 tag picker — up to N engine flags: priority list first, then the rest
    (energy-profile, turf-adjust, layoff-start-count and debut/workout flags are
    left out; debut horses get their own badge). */
-var TAG_PRI=[['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
+var TAG_PRI=[['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
              ['TROUBLED',0],['CLOSER-ELITE',0],['PACE_THIEF',0],['DOMINANT',0],
              ['CLASS_CONCERN',1],['REGRESSING',1],['BOUNCING',1],['SPEED_QUITS',1],['LAYOFF',1],['PACE_SHAPE_MISMATCH',1]];
-var TAG_SKIP=/ENERGY|TURF_ADJ|O\/L|FTS-|WRK-/;
+var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
 var TAG_NEG=/CONCERN|FADER|OVERBET|MISMATCH|BOUNC|REGRESS|WEAK|CHEAP|LAYOFF|QUITS|TAXED|BELOW|COLD|SLOW|RISK/;
 function pickTags(d,max){
   var parts=String((d&&d.flags)||'').split(/\s{2,}/).map(function(s){return s.trim();}).filter(Boolean);
   var used={},out=[];
-  function add(f,neg){if(used[f]||out.length>=max)return;used[f]=1;out.push({full:f,neg:neg,txt:f.replace(/^[^A-Za-z0-9+]+/,'').replace(/_/g,' ')});}
+  function add(f,neg){if(used[f]||out.length>=max)return;used[f]=1;out.push({full:f,neg:neg,txt:f.replace(/^[^A-Za-z0-9+]+/,'').replace(/_/g,' ').replace(/^.*?(\d)(st|nd|rd|th)\s*O\/L\s*$/i,function(m,n,suf){return n+suf.toUpperCase()+' OFF LAYOFF';})});}
   TAG_PRI.forEach(function(p){var f=parts.filter(function(x){return x.toUpperCase().indexOf(p[0])>=0;})[0];if(f)add(f,!!p[1]);});
   parts.forEach(function(f){var u=f.toUpperCase();if(!TAG_SKIP.test(u))add(f,TAG_NEG.test(u)||/⚠|❌|📉|⬇/.test(f));});
   return out;
@@ -8426,11 +8448,11 @@ function _runSimOld(){
 
 /* Shared helper: build the calibrated + scored ranked list from a sim result. */
 function buildRanked(res){
-  var horses=res.horses,TOTAL=res.TOTAL;
+  var horses=res.horses,TOTAL=res.TOTAL;var out;
   var cW=calibrateProbs(horses.map(function(h,i){return res.wins[i]/TOTAL*100;}));
   var cP=calibrateProbs(horses.map(function(h,i){return res.places[i]/TOTAL*100;}));
   var cS=calibrateProbs(horses.map(function(h,i){return res.shows[i]/TOTAL*100;}));
-  return horses.map(function(h,i){
+  out=horses.map(function(h,i){
     var r=Object.assign({},h);
     r.winPct=cW[i];r.placePct=cP[i];r.showPct=cS[i];
     r.idx=i;r.fts=analyzeFTS(h);
@@ -8438,7 +8460,16 @@ function buildRanked(res){
     r.score=r.eng?r.eng.score:0;
     r.scoreRaw=r.eng?r.eng.scoreRaw:0;
     return r;
-  }).sort(function(a,b){
+  });
+  /* v4.7 — rank by the exact blended win probability (the Plackett-Luce weight the simulation samples from,
+     not the noisy 1,000-run count). 519 fall races: top pick 141 -> 159, winner in top 3 317 -> 347, 11 of 15 days better.
+     The engine's own #1 keeps an ENGINE TOP tag, and the consensus flag still uses the engine's #1. */
+  var _eTop=null;
+  out.forEach(function(r){if(r.scratched||!r.eng)return;if(!_eTop||(r.eng.engRank||999)<(_eTop.eng.engRank||999)||((r.eng.engRank||999)===(_eTop.eng.engRank||999)&&r.score>_eTop.score))_eTop=r;});
+  if(_eTop)_eTop.engTop=true;
+  var _byWin=ML_BLEND_ON&&res.weights&&res.weights.length===out.length;
+  return out.sort(function(a,b){
+    if(_byWin){var wa=res.weights[a.idx]||0,wb=res.weights[b.idx]||0;if(wb!==wa)return wb-wa;}
     /* v4.0: engine rank first — guarantees the page matches the Apps Script sheet */
     if(a.eng&&b.eng&&a.eng.engRank&&b.eng.engRank&&a.eng.engRank!==b.eng.engRank)return a.eng.engRank-b.eng.engRank;
     /* Sort by SCORE, not win%. The score is the model's exact deterministic
@@ -9341,7 +9372,7 @@ function printAllResults(){
     html+='<div class="print-header">';
     html+='<div><div class="print-title">Race '+race.race+' — '+trackTitle+'</div>';
     html+='<div class="print-meta">'+date+' · '+(race.dist||'')+'  '+sf+(race.purse?' · $'+parseInt(race.purse).toLocaleString():'')+'</div></div>';
-    html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.26</div>';
+    html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.27</div>';
     html+='</div>';
     html+='<div class="print-pace" style="border-left:3px solid '+pa.scenarioColor+';margin-bottom:10px">';
     html+='<div class="print-pace-label" style="color:'+pa.scenarioColor+'">'+pa.scenario.replace(/_/g,' ')+(pa.maxQsp!==undefined?'  ·  max QSP '+pa.maxQsp:'')+''+'</div>';
@@ -9485,7 +9516,7 @@ function ticketInfo(res,ranked){
      Fall test (401 races): won 42% (111 races); with 2 horses 58%, 3 horses 71%. Forward test from Nov 6 2026. */
   var cons=null;
   if(rows.length>1){
-    var eTop=rows[0].h,sTop=null,sBest=-1,mTop=null,mBest=-1,mTie=false;
+    var eTop=(rows.filter(function(r){return r.h.engTop;})[0]||rows[0]).h,sTop=null,sBest=-1,mTop=null,mBest=-1,mTie=false;
     rows.forEach(function(r){var d=res.engineDetail[r.h.idx]||{};var v=(d.v3w===undefined)?-1:d.v3w;if(v>sBest){sBest=v;sTop=r.h;}
       var q=oddsToProb(r.h.odds);if(q>mBest+1e-9){mBest=q;mTop=r.h;mTie=false;}else if(Math.abs(q-mBest)<=1e-9)mTie=true;});
     if(sTop===eTop&&mTop===eTop&&!mTie&&sBest>0)cons=eTop;
@@ -9564,7 +9595,8 @@ function renderFieldCards(ranked,race){
     var jn=h.jn!==h.jnOrig?'<span style="color:var(--green-b)">'+h.jn+'</span> <span style="text-decoration:line-through;font-size:9px">'+h.jnOrig+'</span>':(h.jn||'—');
     var tags=(h.med==='X'?'<span class="flag lasix-f">1st LASIX</span>':'')+
       ((h.lts===0&&h.fts)?'<span class="fts-badge '+(h.fts.flag.indexOf('ELITE')>=0?'fts-elite':h.fts.flag.indexOf('COMBO')>=0?'fts-combo':h.fts.flag.indexOf('SIRE')>=0?'fts-sire':h.fts.flag.indexOf('TRAINER')>=0?'fts-trainer':'fts-weak')+'">'+h.fts.flag+'</span>':'')+
-      engineFlagHtml(e);
+      engineFlagHtml(e)+
+      ((h.engTop&&i>0)?'<span class="flag" title="The engine scored this horse highest. It ranks lower here because the morning line rates it a longer price. In testing, these won less often but paid more ($12.39 average) — a price play, not the most likely winner." style="border:1px solid #c9a84c;color:#c9a84c;font-weight:700">⚙ ENGINE TOP</span>':'');
     html+='<div class="hc'+(top?'':' rest')+'" style="border-top-color:'+(top?top[1]:'var(--border)')+(valueFlag?';outline:2px solid #b07cd6;outline-offset:2px':'')+'">'+
       '<div class="hc-head"><span style="color:'+(top?top[1]:'var(--muted)')+'">'+(top?top[0]:'#'+(i+1))+(valueFlag?' <span style="color:#b07cd6;font-weight:700">◆ VALUE</span>':'')+'</span>'+(top?'<span>MODEL RANK #'+(i+1)+'</span>':'')+'</div>'+
       '<div class="hc-body">'+
@@ -9704,6 +9736,42 @@ function _printWidthBar(t){
   h+='</div><div style="position:relative;height:10px;font-family:Courier New,monospace;font-size:7px;color:#555">';
   [0.5,0.65,0.8].forEach(function(m){h+='<span style="position:absolute;left:'+(m*100)+'%;transform:translateX(-50%)">▲'+Math.round(m*100)+'%</span>';});
   return h+'</div>';
+}
+
+
+/* v4.6 — races taken off the turf. The XML still says turf, so without this the engine adds
+   turf-record points to a race run on dirt/synthetic (cost BEL R7 Nov 7: Blazing Tiger #1 -> #5).
+   Tested on 20 off-turf races: top pick 4 -> 6, top 3 11 -> 12, no race made worse. */
+var OFFTURF_LS='ddOffTurf_v1';
+var _offMem=null;
+function _offMap(){if(_offMem)return _offMem;try{_offMem=JSON.parse(localStorage.getItem(OFFTURF_LS)||'{}');}catch(e){_offMem={};}return _offMem;}
+function _offSave(m){_offMem=m;try{localStorage.setItem(OFFTURF_LS,JSON.stringify(m));}catch(e){}}
+function _offKey(r){return (r.track||'').trim()+'|'+(r.raceDate||'')+'|'+r.race;}
+function _offAuto(r){return !!(r.horses&&r.horses.some(function(h){return h.scratched&&/off.?turf/i.test(h.scratchReason||'');}));}
+function _isOff(r){
+  if(!r)return false;
+  var orig=r.surfaceOrig!==undefined?r.surfaceOrig:r.surface;
+  if(orig!=='T')return false;
+  var m=_offMap(),k=_offKey(r);
+  return m.hasOwnProperty(k)?!!m[k]:_offAuto(r);
+}
+function _applyOff(r){
+  if(!r)return;
+  if(r.surfaceOrig===undefined)r.surfaceOrig=r.surface;
+  r.offTurf=_isOff(r);
+  r.surface=r.offTurf?'D':r.surfaceOrig;
+}
+function toggleOffTurf(idx){
+  var r=raceData[idx];if(!r)return;
+  _applyOff(r);
+  var m=_offMap();m[_offKey(r)]=!r.offTurf;_offSave(m);
+  delete allSimResults[idx];if(idx===currentRace)simResults=null;
+  selectRace(idx);
+}
+function _offTurfBtn(idx,r){
+  if(!r||(r.surfaceOrig!==undefined?r.surfaceOrig:r.surface)!=='T')return '';
+  var on=!!r.offTurf;
+  return '<button onclick="toggleOffTurf('+idx+')" title="Turn on when this race has been moved off the turf. It is then scored as a main-track race (no turf-record points)." style="margin-left:8px;font-family:monospace;font-size:10.5px;letter-spacing:1px;padding:2px 9px;cursor:pointer;text-transform:uppercase;border:1px solid '+(on?'#c87941':'var(--green)')+';background:'+(on?'#1a1208':'transparent')+';color:'+(on?'#e0a060':'var(--green-b)')+'">'+(on?'☑ OFF THE TURF — scored as main track':'☐ Off the turf?')+'</button>';
 }
 
 function renderResults(){
