@@ -6830,8 +6830,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.8';
-var BUILD_STAMP   = '2026-11-10 · Engine v2.27 (new OVERBET) · ranked by win % (ML blend) · ENGINE TOP tag · consensus flag · off-turf switch';
+var BUILD_VERSION = 'v4.9';
+var BUILD_STAMP   = '2026-11-11 · Engine v2.27 · ranked by win % (ML blend) · speed-horse pace label · ENGINE TOP tag · consensus flag · off-turf switch';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8258,6 +8258,7 @@ function simRace(raceIdx, cb){
       paceAnalysis.scenarioDesc=SCENARIO_DESC_V3[scenarioV3]||paceAnalysis.scenarioDesc;
       paceAnalysis.scenarioColor=SCENARIO_COLOR_V3[scenarioV3]||paceAnalysis.scenarioColor;
       paceAnalysis.qspGap=qspRes.gap;paceAnalysis.maxQsp=qspRes.maxQ;
+      try{_speedLabel(paceAnalysis,horses,qsps);}catch(e){}
       paceAnalysis.horseNotes.forEach(function(nn,ii){
         nn.multiplier=engineDetail[ii]?engineDetail[ii].pm:1.0;
         nn.qsp=qsps[ii];
@@ -8539,6 +8540,7 @@ function kidPostTextColor(pp){
   return light[pp]?'#1a1a0a':'#ffffff';
 }
 function kidSecret(pa,ranked){
+  if(pa&&pa.speedKid)return pa.speedKid;
   var ftsCount=0,total=0;
   if(ranked&&ranked.length){
     total=ranked.length;
@@ -8842,6 +8844,7 @@ function yhPacePts(ranked){
   return pts;
 }
 function yhPaceRead(pa,ranked){
+  if(pa&&pa.speedStory)return pa.speedStory;
   var front=[],back=[];
   ranked.forEach(function(h){
     var v=getStyle(h);
@@ -9070,6 +9073,7 @@ function _pubIsWatch(h, rank) {
   return jPct >= 0.15 || tPct >= 0.15;
 }
 function _pubPaceDesc(pa) {
+  if (pa && pa.speedDesc) return pa.speedDesc;
   var extras = {
     LONE_SPEED: 'Wire horse likely to control fractions — watch closers if pace quickens.',
     HOT_PACE:   'Multiple speed horses pressing — pace may collapse late, favoring closers.',
@@ -9178,7 +9182,7 @@ function _printPublicSheet(allTrackResults) {
         surface: sf,
         purse: race.purse ? parseInt(race.purse) : null,
         cls: (race.stkorclm || '').toUpperCase(),
-        pace: pa ? pa.scenario : '',
+        pace: pa ? (pa.speedLabel || pa.scenario) : '',
         paceDesc: pa ? _pubPaceDesc(pa) : '',
         consensus: _cons ? _cons.pp : null,
         rankings: ranked.map(function(h, ri) {
@@ -9375,8 +9379,8 @@ function printAllResults(){
     html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.27</div>';
     html+='</div>';
     html+='<div class="print-pace" style="border-left:3px solid '+pa.scenarioColor+';margin-bottom:10px">';
-    html+='<div class="print-pace-label" style="color:'+pa.scenarioColor+'">'+pa.scenario.replace(/_/g,' ')+(pa.maxQsp!==undefined?'  ·  max QSP '+pa.maxQsp:'')+''+'</div>';
-    html+='<div class="print-pace-desc">'+pa.scenarioDesc+'</div>';
+    html+='<div class="print-pace-label" style="color:'+(pa.speedColor||pa.scenarioColor)+'">'+(pa.speedLabel||pa.scenario.replace(/_/g,' '))+'</div>';
+    html+='<div class="print-pace-desc">'+(pa.speedDesc||pa.scenarioDesc)+'</div>';
     html+='</div>';
     html+=printCardsHtml(ranked,race);
     if(res.engineDetail&&res.engineDetail[0]&&res.engineDetail[0].src==='engine'){
@@ -9915,13 +9919,57 @@ function renderResults(){
   document.getElementById('results').style.display='block';
 }
 
+
+/* v4.9 — factual early-speed label. 199 charted races (Nov 11 2026): the old HOT/SOFT/LONE forecast did not
+   predict actual early fractions (corr +0.00) and closers did not benefit even when the pace was fast.
+   The engine's early speed points DO find the front-runners (top horse 1st/2nd early 64%). So the label now
+   says who has speed. Display only: scores, win % and rankings are untouched (pa.scenario is kept internally). */
+function _speedLabel(pa,horses,qsps){
+  if(!pa)return;
+  var L=[];horses.forEach(function(h,i){if(!h.scratched)L.push({pp:h.pp,name:h.name,q:+qsps[i]||0});});
+  L.sort(function(a,b){return b.q-a.q;});
+  function nm(x){return '#'+x.pp+' '+x.name+' ('+x.q+')';}
+  function pps(a){return a.map(function(x){return '#'+x.pp;}).join(', ');}
+  var hi=L.filter(function(x){return x.q>=7;}),f5=L.filter(function(x){return x.q>=5;});
+  var top=L[0],sec=L[1],gap=top&&sec?top.q-sec.q:(top?top.q:0);
+  var lab,desc,col,kid,story;
+  if(hi.length>=2){
+    lab='⚔ '+hi.length+' SPEED HORSES — '+pps(hi);col='#c08030';
+    desc=hi.length+' horses have 7+ early speed points: '+hi.map(nm).join(', ')+'.';
+    kid='🐰 '+hi.length+' speedy horses like to be in front today: '+pps(hi)+'. Watch who gets there first!';
+    story=hi.length+' horses usually go right to the front — <b>'+pps(hi)+'</b>.';
+  }else if(f5.length===1&&gap>=3){
+    lab='⭐ 1 CLEAR SPEED HORSE — #'+top.pp;col='#30a060';
+    desc=nm(top)+' is the only horse with 5+ early speed points, '+gap+' clear of the next.';
+    kid='🐰 Only one horse really likes to run in front today: #'+top.pp+'. Watch it go!';
+    story='Only one horse usually goes to the front — <b>#'+top.pp+'</b>.';
+  }else if(f5.length===1){
+    lab='1 SPEED HORSE — #'+top.pp+', #'+sec.pp+' CLOSE';col='#b0a040';
+    desc=nm(top)+' has the most early speed; '+nm(sec)+' is within '+gap+' point'+(gap===1?'':'s')+'.';
+    kid='🐰 #'+top.pp+' likes to be in front, but #'+sec.pp+' might try too!';
+    story='<b>#'+top.pp+'</b> usually goes to the front, with <b>#'+sec.pp+'</b> close behind.';
+  }else if(!top||top.q<=4||f5.length===0){
+    lab='〰 NO CLEAR SPEED'+(top&&top.q>0?' — top #'+top.pp:'');col='#6a9a30';
+    desc='No horse has more than '+(top?top.q:0)+' early speed points'+(top&&top.q>0?' (top: '+nm(top)+')':'')+'.';
+    kid='🐰 None of these horses is a big front-runner. Anybody could take the lead!';
+    story='Nobody here usually goes right to the front'+(top&&top.q>0?' — <b>#'+top.pp+'</b> has the most early speed':'')+'.';
+  }else{
+    lab='SPEED: '+pps(f5.slice(0,3));col='#5888b0';
+    desc='Most early speed: '+f5.slice(0,3).map(nm).join(', ')+'.';
+    kid='🐰 These horses like to be near the front: '+pps(f5.slice(0,3))+'.';
+    story='The horses that usually go forward — <b>'+pps(f5.slice(0,3))+'</b>.';
+  }
+  pa.speedLabel=lab;pa.speedDesc=desc;pa.speedColor=col;pa.speedKid=kid;pa.speedStory=story;
+}
+
 function renderPaceScenario(pa,horses,ranked){
   var scenarioNames={LONE_SPEED:'LONE SPEED',HOT_PACE:'HOT PACE',CONTESTED_SPEED:'CONTESTED SPEED',SOFT_PACE:'SOFT PACE',NORMAL_PACE:'NORMAL PACE',HONEST_PACE:'HONEST PACE',PACE_DUEL:'PACE DUEL',NO_SPEED:'NO SPEED'};
   var icons={LONE_SPEED:'⭐',HOT_PACE:'🔥',CONTESTED_SPEED:'⚔',SOFT_PACE:'〰',NORMAL_PACE:'✓',HONEST_PACE:'✓',PACE_DUEL:'⚔',NO_SPEED:'❓'};
   var banner=document.getElementById('scenarioBanner'),labelEl=document.getElementById('scenarioLabel'),descEl=document.getElementById('scenarioDesc'),statsEl=document.getElementById('scenarioStats');
-  banner.style.borderColor=pa.scenarioColor;banner.style.background=pa.scenarioColor+'18';
-  labelEl.textContent=(icons[pa.scenario]||'')+' '+(scenarioNames[pa.scenario]||pa.scenario);labelEl.style.color=pa.scenarioColor;
-  descEl.textContent=pa.scenarioDesc;
+  var _sc=pa.speedColor||pa.scenarioColor;
+  banner.style.borderColor=_sc;banner.style.background=_sc+'18';
+  labelEl.textContent=pa.speedLabel||((icons[pa.scenario]||'')+' '+(scenarioNames[pa.scenario]||pa.scenario));labelEl.style.color=_sc;
+  descEl.textContent=pa.speedDesc||pa.scenarioDesc;
   statsEl.innerHTML='<div class="sc-stat"><span class="sv" style="color:'+pa.scenarioColor+'">'+pa.numSpeed+'</span><span class="sl">SPEED</span></div>'+
     '<div class="sc-stat"><span class="sv" style="color:#88aad0">'+pa.numClosers+'</span><span class="sl">CLOSERS</span></div>'+
     '<div class="sc-stat"><span class="sv" style="color:var(--gold)">'+(pa.maxQsp!==undefined?pa.maxQsp:'—')+'</span><span class="sl">MAX QSP</span></div>'+
