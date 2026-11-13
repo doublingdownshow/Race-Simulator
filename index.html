@@ -6830,8 +6830,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.12';
-var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend · speed-horse pace label · track condition · consensus flag · off-turf auto';
+var BUILD_VERSION = 'v4.13';
+var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · speed-horse pace label · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8042,7 +8042,8 @@ var SCENARIO_COLOR_V3={HOT_PACE:'#c05030',LONE_SPEED:'#30a060',CONTESTED_SPEED:'
    exp(score / ENGINE_T); ENGINE_T = 18 was fit on 100 June races and
    confirmed on 102 Oct/Nov races (log-loss best at 16-20).
    ═══════════════════════════════════════════════════════════════════════ */
-var ML_BLEND_ON=true;   /* v4.4 morning-line blend — set false to show engine-only win % */
+var ML_BLEND_ON=true;
+var CLOSER_ADJ=0.85;   /* v4.13 T-CLO — closers (QSP 0–2) win % × 0.85; set 1 to turn off */   /* v4.4 morning-line blend — set false to show engine-only win % */
 var ENGINE_T=18;
 var _eqbCache={};
 function _eqbWrap(el){
@@ -8253,6 +8254,14 @@ function simRace(raceIdx, cb){
     var _mlAvg=_mlN?_mlS/_mlN:0.1;
     horses.forEach(function(h,i){var d=engineDetail[i];d.wEng=_ws>0?weights[i]/_ws:0;var q=_mlp[i]||_mlAvg;d.mlp=q;
       weights[i]=(_ws>0&&weights[i]>0)?Math.pow(weights[i]/_ws,0.75)*Math.pow(q,0.5):weights[i];});
+    /* v4.13 — T-CLO: closers (engine early-speed points 0–2) win less often than the blend says
+       (fall 198 won vs 229.3 expected; June holdout 20 vs 27.2). Their weight × CLOSER_ADJ; the field
+       renormalises when win % is computed. Engine score and card score are unchanged. */
+    if(CLOSER_ADJ&&CLOSER_ADJ!==1){
+      horses.forEach(function(h,i){var eh=EM[_eqbKey(h.name)];var qv=(eh&&eh.QSP!==undefined&&eh.QSP!==null&&eh.QSP!=='')?+eh.QSP:null;
+        engineDetail[i].closerAdj=false;
+        if(qv!==null&&!isNaN(qv)&&qv<=2&&weights[i]>0){weights[i]*=CLOSER_ADJ;engineDetail[i].closerAdj=true;}});
+    }
   }
   var n=horses.length,TOTAL=1000,CHUNK=50,simI=0;
   var wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
