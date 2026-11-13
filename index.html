@@ -6830,8 +6830,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.10';
-var BUILD_STAMP   = '2026-11-11 · Engine v2.27 · ranked by win % (ML blend) · speed-horse pace label · ENGINE TOP tag · consensus flag · off-turf switch';
+var BUILD_VERSION = 'v4.11';
+var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score · win % from ML blend · speed-horse pace label · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8483,7 +8483,7 @@ function buildRanked(res){
   var _eTop=null;
   out.forEach(function(r){if(r.scratched||!r.eng)return;if(!_eTop||(r.eng.engRank||999)<(_eTop.eng.engRank||999)||((r.eng.engRank||999)===(_eTop.eng.engRank||999)&&r.score>_eTop.score))_eTop=r;});
   if(_eTop)_eTop.engTop=true;
-  var _byWin=ML_BLEND_ON&&res.weights&&res.weights.length===out.length;
+  var _byWin=RANK_BY_WIN&&ML_BLEND_ON&&res.weights&&res.weights.length===out.length;
   return out.sort(function(a,b){
     if(_byWin){var wa=res.weights[a.idx]||0,wb=res.weights[b.idx]||0;if(wb!==wa)return wb-wa;}
     /* v4.0: engine rank first — guarantees the page matches the Apps Script sheet */
@@ -9795,6 +9795,8 @@ function _condBadge(r){
   var col=wet?'#3a8ad0':'#7a9a50';
   return '<span title="Track condition from the scratches &amp; changes file (latest update). Display only — not used in the scores." style="margin-left:6px;font-family:monospace;font-size:10.5px;letter-spacing:1px;padding:2px 8px;border:1px solid '+col+';color:'+col+';border-radius:3px'+(wet?';font-weight:700':'')+'">'+(wet?'💧 ':'')+txt+'</span>';
 }
+/* v4.11 — false = cards ordered by engine score (pre-v4.7); true = by blended win %. */
+var RANK_BY_WIN = false;
 function _offTurfBtn(idx,r){
   if(!r||(r.surfaceOrig!==undefined?r.surfaceOrig:r.surface)!=='T')return '';
   var on=!!r.offTurf;
