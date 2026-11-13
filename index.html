@@ -6830,7 +6830,7 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.9';
+var BUILD_VERSION = 'v4.10';
 var BUILD_STAMP   = '2026-11-11 · Engine v2.27 · ranked by win % (ML blend) · speed-horse pace label · ENGINE TOP tag · consensus flag · off-turf switch';
 
 function renderLockedPanel(){
@@ -7227,7 +7227,14 @@ function parseScratch(xml){
     scratchData[tid]={};
     te.querySelectorAll('race').forEach(function(re){
       var rn=re.getAttribute('race_number');
-      var ri={scratched:[],changes:[]};
+      var ri={scratched:[],changes:[],cond:{},condAt:{},course:null};
+      re.querySelectorAll('race_changes > change').forEach(function(ce){
+        var dEl=ce.querySelector('change_description'),nEl=ce.querySelector('new_value'),oEl=ce.querySelector('old_value'),tEl=ce.querySelector('date_changed');
+        var d=dEl?dEl.textContent.trim():'',nv=nEl?nEl.textContent.trim():'',ov=oEl?oEl.textContent.trim():'',at=tEl?tEl.textContent.trim():'';
+        var m=d.match(/^Current (Dirt|Turf|All Weather) Track Condition$/);
+        if(m&&nv){if(!ri.condAt[m[1]]||at>=ri.condAt[m[1]]){ri.cond[m[1]]=nv;ri.condAt[m[1]]=at;}}
+        else if(d==='Course'&&nv){if(!ri.course||at>=ri.course.at)ri.course={from:ov,to:nv,at:at};}
+      });
       re.querySelectorAll('start_changes > horse').forEach(function(he){
         var hn=he.getAttribute('horse_name')||'',pp=he.getAttribute('program_number')||'';
         var isSc=false,scr='';
@@ -7252,8 +7259,16 @@ function applyScratches(){
   raceData.forEach(function(race){
     if(!race||!race.horses)return;
     race.horses.forEach(function(h){h.scratched=false;h.scratchReason='';h.changes=[];h.jn=h.jnOrig;});
+    race.trackCond='';race.courseTo='';
     var rc=(scratchData[tc]&&race&&race.race)?scratchData[tc][race.race]:null;
     if(!rc)return;
+    try{
+      var so=race.surfaceOrig!==undefined?race.surfaceOrig:race.surface,cd=rc.cond||{};
+      if(rc.course&&rc.course.to)race.courseTo=rc.course.to;
+      var key=race.courseTo?(/all weather/i.test(race.courseTo)?'All Weather':/turf/i.test(race.courseTo)?'Turf':'Dirt'):(so==='T'?'Turf':cd.Dirt?'Dirt':'All Weather');
+      race.trackCond=cd[key]||(Object.keys(cd).length===1?cd[Object.keys(cd)[0]]:'');
+      if(race.trackCond==='Off Turf')race.trackCond='';
+    }catch(e){}
     rc.scratched.forEach(function(sc){
       var h=race.horses.find(function(h){return h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase();});
       if(h){h.scratched=true;h.scratchReason=sc.reason||'Scratched';}
@@ -7440,7 +7455,7 @@ function selectRace(idx){
   var act=r.horses.filter(function(h){return !h.scratched;}),sc=r.horses.filter(function(h){return h.scratched;});
   var sf=r.surface==='T'?'mp-turf':'mp-dirt',sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
   document.getElementById('raceMeta').innerHTML='<span class="mp mp-d">'+(r.dist||'?')+'</span><span class="mp '+sf+'">'+sl+'</span>'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+' <span class="mp mp-n">'+act.length+' ACTIVE</span>'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'');
-  document.getElementById('raceMeta').innerHTML+=renderTrustBadge(act.length,r.surface,trustRaceType(r),null)+_offTurfBtn(idx,r);
+  document.getElementById('raceMeta').innerHTML+=_condBadge(r)+renderTrustBadge(act.length,r.surface,trustRaceType(r),null)+_offTurfBtn(idx,r);
   var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
   if(sc.length){sl2.innerHTML=sc.map(function(h){return '<span class="sc-tag">PP'+h.pp+' '+h.name+(h.scratchReason?' · '+h.scratchReason:'')+'</span>';}).join('');sa.style.display='block';}else sa.style.display='none';
   var allChg=r.horses.filter(function(h){return !h.scratched&&h.changes&&h.changes.length>0;});
@@ -9751,7 +9766,7 @@ var _offMem=null;
 function _offMap(){if(_offMem)return _offMem;try{_offMem=JSON.parse(localStorage.getItem(OFFTURF_LS)||'{}');}catch(e){_offMem={};}return _offMem;}
 function _offSave(m){_offMem=m;try{localStorage.setItem(OFFTURF_LS,JSON.stringify(m));}catch(e){}}
 function _offKey(r){return (r.track||'').trim()+'|'+(r.raceDate||'')+'|'+r.race;}
-function _offAuto(r){return !!(r.horses&&r.horses.some(function(h){return h.scratched&&/off.?turf/i.test(h.scratchReason||'');}));}
+function _offAuto(r){return !!((r.courseTo&&!/turf/i.test(r.courseTo))||(r.horses&&r.horses.some(function(h){return h.scratched&&/off.?turf/i.test(h.scratchReason||'');})));}
 function _isOff(r){
   if(!r)return false;
   var orig=r.surfaceOrig!==undefined?r.surfaceOrig:r.surface;
@@ -9771,6 +9786,14 @@ function toggleOffTurf(idx){
   var m=_offMap();m[_offKey(r)]=!r.offTurf;_offSave(m);
   delete allSimResults[idx];if(idx===currentRace)simResults=null;
   selectRace(idx);
+}
+function _isWetCond(c){return /sloppy|muddy|sealed|wet|good|yielding|soft|heavy/i.test(c||'');}
+function _condBadge(r){
+  if(!r||(!r.trackCond&&!r.courseTo))return '';
+  var c=r.trackCond||'',wet=_isWetCond(c);
+  var txt=(r.courseTo?('MOVED TO '+r.courseTo.toUpperCase()+(c?' · ':'')):'')+(c?c.toUpperCase():'');
+  var col=wet?'#3a8ad0':'#7a9a50';
+  return '<span title="Track condition from the scratches &amp; changes file (latest update). Display only — not used in the scores." style="margin-left:6px;font-family:monospace;font-size:10.5px;letter-spacing:1px;padding:2px 8px;border:1px solid '+col+';color:'+col+';border-radius:3px'+(wet?';font-weight:700':'')+'">'+(wet?'💧 ':'')+txt+'</span>';
 }
 function _offTurfBtn(idx,r){
   if(!r||(r.surfaceOrig!==undefined?r.surfaceOrig:r.surface)!=='T')return '';
