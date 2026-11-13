@@ -6830,8 +6830,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.11';
-var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score · win % from ML blend · speed-horse pace label · track condition · consensus flag · off-turf auto';
+var BUILD_VERSION = 'v4.12';
+var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend · speed-horse pace label · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8484,7 +8484,7 @@ function buildRanked(res){
   out.forEach(function(r){if(r.scratched||!r.eng)return;if(!_eTop||(r.eng.engRank||999)<(_eTop.eng.engRank||999)||((r.eng.engRank||999)===(_eTop.eng.engRank||999)&&r.score>_eTop.score))_eTop=r;});
   if(_eTop)_eTop.engTop=true;
   var _byWin=RANK_BY_WIN&&ML_BLEND_ON&&res.weights&&res.weights.length===out.length;
-  return out.sort(function(a,b){
+  var _srt=out.sort(function(a,b){
     if(_byWin){var wa=res.weights[a.idx]||0,wb=res.weights[b.idx]||0;if(wb!==wa)return wb-wa;}
     /* v4.0: engine rank first — guarantees the page matches the Apps Script sheet */
     if(a.eng&&b.eng&&a.eng.engRank&&b.eng.engRank&&a.eng.engRank!==b.eng.engRank)return a.eng.engRank-b.eng.engRank;
@@ -8500,6 +8500,7 @@ function buildRanked(res){
     if(b.scoreRaw!==a.scoreRaw)return b.scoreRaw-a.scoreRaw;
     return (a.pp||0)-(b.pp||0);
   });
+  return _nearSwap(_srt,res);
 }
 
 // ===== KIDS SHEET =====
@@ -9797,6 +9798,26 @@ function _condBadge(r){
 }
 /* v4.11 — false = cards ordered by engine score (pre-v4.7); true = by blended win %. */
 var RANK_BY_WIN = false;
+/* v4.12 — when two horses next to each other are within RANK_NEAR_GAP model-score points, the one with
+   the higher win % goes first (repeated until settled, so a close group sorts itself by win %).
+   0 = pure model-score order. Win % values are never changed. */
+var RANK_NEAR_GAP = 2;
+function _nearSwap(L,res){
+  if(RANK_BY_WIN||!RANK_NEAR_GAP||!res||!res.weights)return L;
+  var act=[],pos=[];
+  L.forEach(function(r,i){if(!r.scratched&&r.eng&&r.eng.scoreRaw>-1e8){act.push(r);pos.push(i);}});
+  var w=function(r){return res.weights[r.idx]||0;};
+  for(var pass=0;pass<act.length*act.length;pass++){
+    var sw=false;
+    for(var i=0;i<act.length-1;i++){
+      var a=act[i],b=act[i+1];
+      if(a.eng.scoreRaw-b.eng.scoreRaw<=RANK_NEAR_GAP&&w(b)>w(a)){act[i]=b;act[i+1]=a;sw=true;}
+    }
+    if(!sw)break;
+  }
+  var out=L.slice();pos.forEach(function(p,k){out[p]=act[k];});
+  return out;
+}
 function _offTurfBtn(idx,r){
   if(!r||(r.surfaceOrig!==undefined?r.surfaceOrig:r.surface)!=='T')return '';
   var on=!!r.offTurf;
