@@ -6830,7 +6830,7 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.13';
+var BUILD_VERSION = 'v4.14';
 var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · speed-horse pace label · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
@@ -7185,7 +7185,7 @@ function parseMain(xml){
         workouts.push({txt:txt,daysBack:db});
       });
       race.horses.push({
-        pp:parseInt(hg('pp')||hg('program')||'0'),
+        pp:parseInt(hg('program')||hg('pp')||'0'),prog:(hg('program')||hg('pp')||'').trim(),post:parseInt(hg('pp')||'0'),
         name:hg('horse_name')||'UNKNOWN',
         odds:hg('morn_odds')||'20/1',
         power:n(hg('power')),avgSpd:n(hg('avgspd')||hg('avg_spd_sd')),hiSpd:n(hg('hi_spd_sd')),
@@ -7253,6 +7253,7 @@ function parseScratch(xml){
   });
 }
 
+function _scrNorm(n){return String(n||'').toUpperCase().replace(/\([A-Z]{2,3}\)/g,'').replace(/[^A-Z0-9]/g,'');}
 function applyScratches(){
   if(!raceData.length)return;
   var tc=(raceData[0]&&raceData[0].track?raceData[0].track.trim():'')||'';
@@ -7270,11 +7271,11 @@ function applyScratches(){
       if(race.trackCond==='Off Turf')race.trackCond='';
     }catch(e){}
     rc.scratched.forEach(function(sc){
-      var h=race.horses.find(function(h){return h.pp==sc.pp||h.name.toLowerCase()===sc.name.toLowerCase();});
+      var _sn=_scrNorm(sc.name);var h=race.horses.find(function(h){return _scrNorm(h.name)===_sn;})||(sc.name?null:race.horses.find(function(h){return String(h.prog||h.pp)===String(sc.pp);}));
       if(h){h.scratched=true;h.scratchReason=sc.reason||'Scratched';}
     });
     rc.changes.forEach(function(chg){
-      var h=race.horses.find(function(h){return h.pp==chg.pp||h.name.toLowerCase()===chg.horse.toLowerCase();});
+      var _cn=_scrNorm(chg.horse);var h=race.horses.find(function(h){return _scrNorm(h.name)===_cn;})||(chg.horse?null:race.horses.find(function(h){return String(h.prog||h.pp)===String(chg.pp);}));
       if(h){if(chg.type==='JOCKEY')h.jn=chg.new;h.changes.push(chg);}
     });
   });
