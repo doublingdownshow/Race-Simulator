@@ -6839,7 +6839,7 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.15';
+var BUILD_VERSION = 'v4.16';
 var BUILD_STAMP   = '2026-11-13 · Engine v2.28 (no-figure horses scored as first-timers) · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · scratches by name · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
@@ -8251,7 +8251,7 @@ function simRace(raceIdx, cb){
       d.engineMult=d.pm;
       d.lastSpd=eh.LastSpeed||d.lastSpd;
       d.trnrUsed=eh.TrainerPct||d.trnrUsed;
-      d.flags=eh.Flags||'';
+      d.flags=eh.Flags||'';d.tp=eh.TournPick||'';
       d.abc=eh.ABC||'';
       d.role=eh.PaceRole||'';
       d.raceLabel=eh.RaceTypeLabel||'';
@@ -8436,7 +8436,7 @@ function engineFlagHtml(d){
   if(!d)return '';
   if(d.src==='engine'){
     var tg=pickTags(d,4),all=String(d.flags||'').split(/\s{2,}/).map(function(s){return s.trim();}).filter(Boolean);
-    var html=tg.map(function(t){return '<span class="eng-flag '+(t.neg?'ef-neg':'ef-pos')+'" title="'+t.full.replace(/"/g,'&quot;')+'">'+t.txt+'</span>';}).join('');
+    var html=(/LONGSHOT ANGLE/.test(d.tp||'')?'<span class="eng-flag" style="background:#3a2a05;border:1px solid #d4a017;color:#f5c542;font-weight:700" title="Engine tourney tag: longshot angle (morning line 8-1 or more with a strong angle score). Fall 2026 (Oct 22–Nov 13): 234 picks, 19 won (8%), top 3 31%; $2 win ROI −15% with every winner included (−33% without the two biggest). A price/exotics angle, not a win bet.">💡 LONGSHOT</span>':'')+tg.map(function(t){return '<span class="eng-flag '+(t.neg?'ef-neg':'ef-pos')+'" title="'+t.full.replace(/"/g,'&quot;')+'">'+t.txt+'</span>';}).join('');
     if(all.length>tg.length)html+='<span class="eng-flag ef-inf" style="opacity:.6" title="'+all.join(' · ').replace(/"/g,'&quot;')+'">+'+(all.length-tg.length)+'</span>';
     return html;
   }
