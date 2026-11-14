@@ -468,6 +468,7 @@ const QSP_MODE = 'EARLY_INTENT';
 
 // v2.27 switch
 var OVERBET_RANK_ON = true;
+var NOFIG_AS_FTS = true;   // v2.28 — horses with starts but no speed figure in any start use the FTS path
 // v2.26 switches
 const FTS_ANCHOR_ON = true;          // field-anchored debut scoring (false = v2.25 behaviour)
 const TURF_GRADED   = 'SYMMETRIC';   // 'SYMMETRIC' | 'POSITIVE' | 'OFF'
@@ -916,10 +917,16 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
 
     // ── LIFETIME / FTS ──
     const lifetimeStat = statMap['LIFETIME'];
-    const isFTS        = lifetimeStat ? (+getText_(lifetimeStat, 'starts') === 0) : false;
+    const isFTSreal_   = lifetimeStat ? (+getText_(lifetimeStat, 'starts') === 0) : false;
 
     // ── PP DATA ──
     const ppNodes    = horse.getChildren('ppdata');
+    // v2.28 — NOFIG_AS_FTS: a horse whose every past start has no speed figure (XML -97 / blank,
+    // e.g. Thistledown shippers, some debuts) is scored on the first-time-starter path instead of
+    // getting near-zero speed components. (DMR Nov 13 R1 Ala Sawab, 6-5 ML, scored 0.2 and won.)
+    const ranPps_     = ppNodes.filter(p => { const f = getText_(p, 'positionfi'); return f !== '' && f !== '0'; });
+    const noFigAll_   = ranPps_.length > 0 && ranPps_.every(p => !(parseFloat(getText_(p, 'speedfigur')) > 0));
+    const isFTS        = isFTSreal_ || (NOFIG_AS_FTS && noFigAll_);
     // v2.26: lifetime turf record (graded turf adjustment)
     const turfStat_   = statMap['TURF'];
     const turfStarts_ = turfStat_ ? (+getText_(turfStat_, 'starts') || 0) : 0;
@@ -1766,6 +1773,7 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
       TodaySurf: raceSurf, TurfStarts: turfStarts_, TurfWins: turfWins_,
 
       isFTS: isFTS,
+      NoFig: !isFTSreal_ && noFigAll_,   // v2.28 — has starts, no speed figure in any
       FtsLstSale: ftsLstSale, FtsStudFee: ftsStudFee, FtsSaleMult: ftsSaleMult,
       FtsQualityWorks: ftsQualityWorks, FtsRecentWorkDays: ftsRecentWorkDays, FtsRecentWorkCount: ftsRecentWorkCount,
       ParFit: parFit,         // avgLast4 - todaysCls (race par fitness)
@@ -2777,6 +2785,7 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
       }
     }
 
+    if (h.NoFig) flags.unshift('🚫 NO FIGURE');   // v2.28 — scored as a first-time starter
     h.Flags = flags.join('  ');
   });
 
@@ -6830,8 +6839,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.14';
-var BUILD_STAMP   = '2026-11-13 · Engine v2.27 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · speed-horse pace label · track condition · consensus flag · off-turf auto';
+var BUILD_VERSION = 'v4.15';
+var BUILD_STAMP   = '2026-11-13 · Engine v2.28 (no-figure horses scored as first-timers) · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · scratches by name · track condition · consensus flag · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8084,7 +8093,7 @@ function engineForRace(race){
     m={};cap.forEach(function(h){m[_eqbKey(h.HorseName)]=h;});
     m.__scenario=cap.length?cap[cap.length-1].PaceScenario:null;
   }catch(e){
-    if(window.console)console.error('Engine v2.27 failed on race '+race.race+':',e);
+    if(window.console)console.error('Engine v2.28 failed on race '+race.race+':',e);
     m=null;
   }
   _eqbCache[key]=m;
@@ -8410,7 +8419,7 @@ function separationBadge(scores){
 /* v4.0 tag picker — up to N engine flags: priority list first, then the rest
    (energy-profile, turf-adjust, layoff-start-count and debut/workout flags are
    left out; debut horses get their own badge). */
-var TAG_PRI=[['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
+var TAG_PRI=[['NO FIGURE',1],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
              ['TROUBLED',0],['CLOSER-ELITE',0],['PACE_THIEF',0],['DOMINANT',0],
              ['CLASS_CONCERN',1],['REGRESSING',1],['BOUNCING',1],['SPEED_QUITS',1],['LAYOFF',1],['PACE_SHAPE_MISMATCH',1]];
 var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
@@ -9402,7 +9411,7 @@ function printAllResults(){
     html+='<div class="print-header">';
     html+='<div><div class="print-title">Race '+race.race+' — '+trackTitle+'</div>';
     html+='<div class="print-meta">'+date+' · '+(race.dist||'')+'  '+sf+(race.purse?' · $'+parseInt(race.purse).toLocaleString():'')+'</div></div>';
-    html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.27</div>';
+    html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.28</div>';
     html+='</div>';
     html+='<div class="print-pace" style="border-left:3px solid '+pa.scenarioColor+';margin-bottom:10px">';
     html+='<div class="print-pace-label" style="color:'+(pa.speedColor||pa.scenarioColor)+'">'+(pa.speedLabel||pa.scenario.replace(/_/g,' '))+'</div>';
