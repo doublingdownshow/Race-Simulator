@@ -267,6 +267,11 @@ var EQB = (function () {
 //  EQUIBASE COMBINED ENGINE  v2.27
 //  Single-pass: Scratches → Pace → Raw → Form Cycle → ABC
 //
+//  Nov 19 2026 — FADE_FAV_ON = false (Colin). The FADE FAVORITE tournament pick is switched off: one of its
+//   two routes needed the v2.27 OVERBET label, which failed its forward test (200 flagged, −17% vs −25%
+//   price-matched). Scores, ranks, win % and every other tourney pick rule unchanged; a horse that would
+//   have been FADE now goes through the normal pick waterfall. Set FADE_FAV_ON = true to restore.
+//
 //  CHANGES FROM v2.26 → v2.27  (Nov 10 2026) — ONE change, value label only
 //   OVERBET now means: a morning-line top-2 choice that the engine ranks 4th or worse.
 //   Old rule (engine % at T=28 more than 5 pts under the ML %) flagged 439 of 519 ML favourites
@@ -468,6 +473,7 @@ const QSP_MODE = 'EARLY_INTENT';
 
 // v2.27 switch
 var OVERBET_RANK_ON = true;
+var FADE_FAV_ON = false;     // Nov 19 2026 (Colin): FADE FAVORITE tournament pick switched off — it rode on the v2.27 OVERBET rule, which failed its forward test. true = old behaviour.
 var NOFIG_AS_FTS = true;   // v2.28 — horses with starts but no speed figure in any start use the FTS path
 // v2.26 switches
 const FTS_ANCHOR_ON = true;          // field-anchored debut scoring (false = v2.25 behaviour)
@@ -3171,7 +3177,9 @@ function processRace_(race, fileName, scratchSet, paceRows, rawRows, abcRows, na
     const hasSecondNegative = isRegressing || isBouncing || isSpeedQuits || is4thOL || negativeTrend;
 
 
-    if (isShortFav && speedQuits && (h.PaceScenarioCode || '') === 'HOT_PACE') {
+    if (!FADE_FAV_ON) {
+      // FADE FAVORITE off — horse goes through the normal waterfall below
+    } else if (isShortFav && speedQuits && (h.PaceScenarioCode || '') === 'HOT_PACE') {
       h.TournPick = '⚠️ FADE FAVORITE';
     } else if (isShortFav && tier.includes('OVERBET') && canFade && hasSecondNegative) {
       h.TournPick = '⚠️ FADE FAVORITE';
@@ -6839,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.17';
-var BUILD_STAMP   = '2026-11-15 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85 · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · off-turf auto';
+var BUILD_VERSION = 'v4.20';
+var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -7191,7 +7199,8 @@ function parseMain(xml){
       he.querySelectorAll('workoutdata').forEach(function(w){
         var wtEl=w.querySelector('worktext');var txt=wtEl?wtEl.textContent.trim():'';
         var dbEl=w.querySelector('days_back');var db=dbEl?parseInt(dbEl.textContent)||999:999;
-        workouts.push({txt:txt,daysBack:db});
+        var rkEl=w.querySelector('ranking'),rgEl=w.querySelector('rank_group');
+        workouts.push({txt:txt,daysBack:db,rank:rkEl?parseInt(rkEl.textContent)||0:0,group:rgEl?parseInt(rgEl.textContent)||0:0});
       });
       race.horses.push({
         pp:parseInt(hg('program')||hg('pp')||'0'),prog:(hg('program')||hg('pp')||'').trim(),post:parseInt(hg('pp')||'0'),
@@ -8053,6 +8062,8 @@ var SCENARIO_COLOR_V3={HOT_PACE:'#c05030',LONE_SPEED:'#30a060',CONTESTED_SPEED:'
    confirmed on 102 Oct/Nov races (log-loss best at 16-20).
    ═══════════════════════════════════════════════════════════════════════ */
 var ML_BLEND_ON=true;
+var WORK_ADJ_ON=true, WORK_ADJ_14=1.30, WORK_ADJ_30=1.15, WORK_ADJ_FTS2=2.0;   /* v4.20 workout-rank adjustment */
+var OVERBET_SHOW=false;   /* v4.18 — OVERBET flag hidden while OVERBET v2 is tested */
 var CLOSER_ADJ=0.85;   /* v4.13 T-CLO — closers (QSP 0–2) win % × 0.85; set 1 to turn off */   /* v4.4 morning-line blend — set false to show engine-only win % */
 var ENGINE_T=18;
 var _eqbCache={};
@@ -8251,7 +8262,7 @@ function simRace(raceIdx, cb){
       d.engineMult=d.pm;
       d.lastSpd=eh.LastSpeed||d.lastSpd;
       d.trnrUsed=eh.TrainerPct||d.trnrUsed;
-      d.flags=eh.Flags||'';d.tp=eh.TournPick||'';
+      d.flags=eh.Flags||'';if(!OVERBET_SHOW)d.flags=d.flags.split(/\s{2,}/).filter(function(f){return !/OVERBET/i.test(f);}).join('  ');d.tp=eh.TournPick||'';
       d.abc=eh.ABC||'';
       d.role=eh.PaceRole||'';
       d.raceLabel=eh.RaceTypeLabel||'';
@@ -8271,6 +8282,22 @@ function simRace(raceIdx, cb){
       horses.forEach(function(h,i){var eh=EM[_eqbKey(h.name)];var qv=(eh&&eh.QSP!==undefined&&eh.QSP!==null&&eh.QSP!=='')?+eh.QSP:null;
         engineDetail[i].closerAdj=false;
         if(qv!==null&&!isNaN(qv)&&qv<=2&&weights[i]>0){weights[i]*=CLOSER_ADJ;engineDetail[i].closerAdj=true;}});
+    }
+    /* v4.20 — workout RANK: top 10% of a group of 10+, within 30 days (pre-registered test, held out on fall 2026:
+       log-loss t +2.19). Raced horse: top work <=14 days x WORK_ADJ_14, 15-30 days x WORK_ADJ_30.
+       First-time starter: 2+ top works x WORK_ADJ_FTS2. Weight only; the field renormalises. */
+    if(WORK_ADJ_ON){
+      horses.forEach(function(h,i){
+        var tw=(h.workouts||[]).filter(function(w){return w.daysBack>=0&&w.daysBack<=30&&w.group>=10&&w.rank>0&&w.rank/w.group<=0.10;});
+        var tw14=tw.filter(function(w){return w.daysBack<=14;}).length;
+        var fts=!(h.pps&&h.pps.length);var m=1;
+        if(fts){if(tw.length>=2)m=WORK_ADJ_FTS2;}
+        else if(tw14>=1)m=WORK_ADJ_14; else if(tw.length>=1)m=WORK_ADJ_30;
+        engineDetail[i].workAdj=m;
+        if(m!==1&&weights[i]>0){weights[i]*=m;
+          var best=tw.slice().sort(function(a,b){return a.rank/a.group-b.rank/b.group;})[0];
+          engineDetail[i].flags=('🔥 TOP WORK '+best.rank+'/'+best.group+'  '+(engineDetail[i].flags||'')).trim();}
+      });
     }
   }
   var n=horses.length,TOTAL=1000,CHUNK=50,simI=0;
@@ -8419,7 +8446,7 @@ function separationBadge(scores){
 /* v4.0 tag picker — up to N engine flags: priority list first, then the rest
    (energy-profile, turf-adjust, layoff-start-count and debut/workout flags are
    left out; debut horses get their own badge). */
-var TAG_PRI=[['NO FIGURE',1],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
+var TAG_PRI=[['NO FIGURE',1],['TOP WORK',0],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
              ['TROUBLED',0],['CLOSER-ELITE',0],['PACE_THIEF',0],['DOMINANT',0],
              ['CLASS_CONCERN',1],['REGRESSING',1],['BOUNCING',1],['SPEED_QUITS',1],['LAYOFF',1],['PACE_SHAPE_MISMATCH',1]];
 var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
