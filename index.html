@@ -6847,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.24';
-var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 · ⚠ NEED THE LEAD chip · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
+var BUILD_VERSION = 'v4.26';
+var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 · ⚠ NEED THE LEAD chip · ✖ toss flags (red), ★ elite works (green), VALUE flags hidden · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8067,6 +8067,9 @@ var SCENARIO_COLOR_V3={HOT_PACE:'#c05030',LONE_SPEED:'#30a060',CONTESTED_SPEED:'
    confirmed on 102 Oct/Nov races (log-loss best at 16-20).
    ═══════════════════════════════════════════════════════════════════════ */
 var ML_BLEND_ON=true;
+var VALUE_SHOW=false;   /* v4.25 — VALUE / PRIME_VALUE flags hidden (claude/flag_impact_20261121.md) */
+var TOSS_RE=/CLASS_BELOW_FIELD|CLASS_CONCERN|LAYOFF CONCERN/i;
+var WORK_RE=/TOP WORK|WRK-ELITE/i;   /* v4.26 green work chips */   /* v4.25 toss flags */
 var NTL_SHOW=true;   /* v4.21 — need-the-lead v2 chip (display only) */
 var WORK_ADJ_ON=true, WORK_ADJ_14=1.30, WORK_ADJ_30=1.15, WORK_ADJ_FTS2=2.0;   /* v4.20 workout-rank adjustment */
 var OVERBET_SHOW=false;   /* v4.18 — OVERBET flag hidden while OVERBET v2 is tested */
@@ -8268,7 +8271,7 @@ function simRace(raceIdx, cb){
       d.engineMult=d.pm;
       d.lastSpd=eh.LastSpeed||d.lastSpd;
       d.trnrUsed=eh.TrainerPct||d.trnrUsed;
-      d.flags=eh.Flags||'';if(!OVERBET_SHOW)d.flags=d.flags.split(/\s{2,}/).filter(function(f){return !/OVERBET/i.test(f);}).join('  ');d.tp=eh.TournPick||'';
+      d.flags=eh.Flags||'';if(!VALUE_SHOW)d.flags=String(d.flags||'').split(/\s{2,}/).filter(function(f){return !/^(PRIME_)?VALUE$/i.test(f.replace(/^[^A-Za-z]+/,'').trim());}).join('  ');if(!OVERBET_SHOW)d.flags=d.flags.split(/\s{2,}/).filter(function(f){return !/OVERBET/i.test(f);}).join('  ');d.tp=eh.TournPick||'';
       d.abc=eh.ABC||'';
       d.role=eh.PaceRole||'';
       d.raceLabel=eh.RaceTypeLabel||'';
@@ -8469,10 +8472,10 @@ function separationBadge(scores){
 /* v4.0 tag picker — up to N engine flags: priority list first, then the rest
    (energy-profile, turf-adjust, layoff-start-count and debut/workout flags are
    left out; debut horses get their own badge). */
-var TAG_PRI=[['NO FIGURE',1],['NEED THE LEAD',1],['TOP WORK',0],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
+var TAG_PRI=[['NO FIGURE',1],['CLASS_BELOW_FIELD',1],['CLASS_CONCERN',1],['LAYOFF CONCERN',1],['NEED THE LEAD',1],['TOP WORK',0],['WRK-ELITE',0],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
              ['TROUBLED',0],['CLOSER-ELITE',0],['PACE_THIEF',0],['DOMINANT',0],
              ['CLASS_CONCERN',1],['REGRESSING',1],['BOUNCING',1],['SPEED_QUITS',1],['LAYOFF',1],['PACE_SHAPE_MISMATCH',1]];
-var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
+var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-(?!ELITE)/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
 var TAG_NEG=/CONCERN|FADER|OVERBET|MISMATCH|BOUNC|REGRESS|WEAK|CHEAP|LAYOFF|QUITS|TAXED|BELOW|COLD|SLOW|RISK/;
 function pickTags(d,max){
   var parts=String((d&&d.flags)||'').split(/\s{2,}/).map(function(s){return s.trim();}).filter(Boolean);
@@ -8486,7 +8489,7 @@ function engineFlagHtml(d){
   if(!d)return '';
   if(d.src==='engine'){
     var tg=pickTags(d,4),all=String(d.flags||'').split(/\s{2,}/).map(function(s){return s.trim();}).filter(Boolean);
-    var html=(/LONGSHOT ANGLE/.test(d.tp||'')?'<span class="eng-flag" style="background:#3a2a05;border:1px solid #d4a017;color:#f5c542;font-weight:700" title="Engine tourney tag: longshot angle (morning line 8-1 or more with a strong angle score). Oct 22–Nov 14 2026, graded on the full field: 198 picks that ran, 19 won (9.6%), top 3 32%; $2 win ROI 0% with every winner included (−20% without the two biggest). A price/exotics angle, not a win bet.">💡 LONGSHOT</span>':'')+tg.map(function(t){return '<span class="eng-flag '+(t.neg?'ef-neg':'ef-pos')+'" title="'+t.full.replace(/"/g,'&quot;')+'">'+t.txt+'</span>';}).join('');
+    var html=(/LONGSHOT ANGLE/.test(d.tp||'')?'<span class="eng-flag" style="background:#3a2a05;border:1px solid #d4a017;color:#f5c542;font-weight:700" title="Engine tourney tag: longshot angle (morning line 8-1 or more with a strong angle score). Oct 22–Nov 14 2026, graded on the full field: 198 picks that ran, 19 won (9.6%), top 3 32%; $2 win ROI 0% with every winner included (−20% without the two biggest). A price/exotics angle, not a win bet.">💡 LONGSHOT</span>':'')+tg.map(function(t){return (WORK_RE.test(t.full)?'<span class="eng-flag" style="background:#12502c;border:1px solid #52b788;color:#fff;font-weight:700" title="ELITE WORK — '+t.full.replace(/"/g,'&quot;')+'. TOP WORK = ranked in the top 10% of 10+ works in the last 30 days (raises win % ×1.15–2.0, v4.20). WRK-ELITE = elite debut work: won 21-22% on fall 2026 and 2023, more than the site % said.">★ '+t.txt+'</span>':TOSS_RE.test(t.full)?'<span class="eng-flag" style="background:#7a1020;border:1px solid #ff5c6e;color:#fff;font-weight:700" title="TOSS FLAG — '+t.full.replace(/"/g,'&quot;')+'. Fall 2026 + 2023: these horses won 4-12% and missed the board more often than their final odds said.">✖ '+t.txt+'</span>':'<span class="eng-flag '+(t.neg?'ef-neg':'ef-pos')+'" title="'+t.full.replace(/"/g,'&quot;')+'">'+t.txt+'</span>');}).join('');
     if(all.length>tg.length)html+='<span class="eng-flag ef-inf" style="opacity:.6" title="'+all.join(' · ').replace(/"/g,'&quot;')+'">+'+(all.length-tg.length)+'</span>';
     return html;
   }
@@ -9419,7 +9422,7 @@ function printCardsHtml(ranked,race){
   act.forEach(function(h,i){
     var e=h.eng||{},bk=BK[e.bucket]||['—','#888'],top=TOP[i],col=top?top[1]:'#1a1a0a';
     var vf=false;if(i===0&&race.surface!=='T'){var imp=oddsToProb(h.odds)*100;if(favH&&favH.pp!==h.pp&&imp>0&&h.winPct>=2*imp)vf=true;}
-    var tags=pickTags(e,4).map(function(t){return '<span style="display:inline-block;white-space:nowrap;margin-bottom:2px;border:1px solid '+(t.neg?'#c05060':'#3a8a5a')+';color:'+(t.neg?'#b03a4a':'#2a7a4a')+';padding:0 3px;margin-right:3px;font-size:7px">'+t.txt+'</span>';}).join('');
+    var tags=pickTags(e,4).map(function(t){return '<span style="display:inline-block;white-space:nowrap;margin-bottom:2px;border:1px solid '+(t.neg?'#c05060':'#3a8a5a')+';color:'+(t.neg?'#b03a4a':'#2a7a4a')+';padding:0 3px;margin-right:3px;font-size:7px'+(TOSS_RE.test(t.full)?';background:#b03a4a;color:#fff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact':WORK_RE.test(t.full)?';background:#2a7a4a;color:#fff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact':'')+'">'+(TOSS_RE.test(t.full)?'✖ ':WORK_RE.test(t.full)?'★ ':'')+t.txt+'</span>';}).join('');
     if(h.lts===0&&h.fts)tags='<span style="border:1px solid #7a40c0;color:#7a40c0;padding:0 3px;margin-right:3px;font-size:7px">'+h.fts.flag+'</span>'+tags;
     var days=e.days?(+e.days>=90?box(e.days,'#c03040'):e.days):'—';
     var ac=h.avgcls>0?(h.avgcls===cMax?box(h.avgcls,'#2a8a4a'):h.avgcls===cMin?box(h.avgcls,'#c03040'):h.avgcls):'—';
