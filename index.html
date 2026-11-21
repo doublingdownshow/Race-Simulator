@@ -9267,6 +9267,7 @@ function _printPublicSheet(allTrackResults) {
         surface: sf,
         purse: race.purse ? parseInt(race.purse) : null,
         cls: (race.stkorclm || '').toUpperCase(),
+        'class': _raceTypeLabel(race),
         pace: pa ? (pa.speedLabel || pa.scenario) : '',
         paceDesc: pa ? _pubPaceDesc(pa) : '',
         consensus: _cons ? _cons.pp : null,
