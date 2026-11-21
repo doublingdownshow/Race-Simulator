@@ -6847,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.21';
-var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · ⚠ NEED THE LEAD chip (display only) · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
+var BUILD_VERSION = 'v4.22';
+var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · ⚠ NEED THE LEAD chip (display only) · race type shown · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -7104,7 +7104,7 @@ function parseMain(xml){
   raceData=[];
   races.forEach(function(re){
     var gt=function(t){var el=re.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
-    var race={_el:re,race:gt('race'),dist:gt('dist_disp')||gt('distance'),surface:gt('surface'),purse:gt('purse'),track:gt('track'),raceDate:gt('race_date'),todaysCls:parseFloat(gt('todays_cls'))||0,distNum:parseFloat(gt('distance'))||0,stkorclm:(gt('stkorclm')||'').toUpperCase(),stkClmMd:(gt('stk_clm_md')||'').toUpperCase(),horses:[]};
+    var race={_el:re,race:gt('race'),dist:gt('dist_disp')||gt('distance'),surface:gt('surface'),purse:gt('purse'),track:gt('track'),raceDate:gt('race_date'),todaysCls:parseFloat(gt('todays_cls'))||0,distNum:parseFloat(gt('distance'))||0,stkorclm:(gt('stkorclm')||'').toUpperCase(),stkClmMd:(gt('stk_clm_md')||'').toUpperCase(),claimAmt:parseFloat(gt('claimamt'))||0,ageRestr:(gt('age_restr')||'').trim(),horses:[]};
     re.querySelectorAll(':scope > horsedata').forEach(function(he){
       var hg=function(t){var el=he.querySelector(':scope > '+t);return el?el.textContent.trim():null;};
       var n=function(v){var f=parseFloat(v);return(!isNaN(f)&&v&&v!=='NA'&&v!==''&&f!==0)?f:null;};
@@ -7478,8 +7478,8 @@ function selectRace(idx){
   document.getElementById('raceTitle').textContent='Race '+r.race;
   var act=r.horses.filter(function(h){return !h.scratched;}),sc=r.horses.filter(function(h){return h.scratched;});
   var sf=r.surface==='T'?'mp-turf':'mp-dirt',sl=r.surface==='T'?'TURF':r.surface==='D'?'DIRT':r.surface||'?';
-  document.getElementById('raceMeta').innerHTML='<span class="mp mp-d">'+(r.dist||'?')+'</span><span class="mp '+sf+'">'+sl+'</span>'+(r.purse?'<span class="mp mp-n">$'+parseInt(r.purse).toLocaleString()+'</span>':'')+' <span class="mp mp-n">'+act.length+' ACTIVE</span>'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'');
-  document.getElementById('raceMeta').innerHTML+=_condBadge(r)+renderTrustBadge(act.length,r.surface,trustRaceType(r),null)+_offTurfBtn(idx,r);
+  document.getElementById('raceMeta').innerHTML='<span class="mp mp-d">'+(r.dist||'?')+'</span><span class="mp '+sf+'">'+sl+'</span>'+_raceTypeChip(r)+(r.purse?'<span class="mp mp-n">PURSE $'+parseInt(r.purse).toLocaleString()+'</span>':'')+' <span class="mp mp-n">'+act.length+' ACTIVE</span>'+(sc.length?'<span class="mp mp-sc">✂ '+sc.length+' SCRATCHED</span>':'');
+  document.getElementById('raceMeta').innerHTML+=_condBadge(r)+_offTurfBtn(idx,r);
   var sa=document.getElementById('scAlert'),sl2=document.getElementById('scList');
   if(sc.length){sl2.innerHTML=sc.map(function(h){return '<span class="sc-tag">PP'+h.pp+' '+h.name+(h.scratchReason?' · '+h.scratchReason:'')+'</span>';}).join('');sa.style.display='block';}else sa.style.display='none';
   var allChg=r.horses.filter(function(h){return !h.scratched&&h.changes&&h.changes.length>0;});
@@ -9889,6 +9889,17 @@ function _nearSwap(L,res){
   var out=L.slice();pos.forEach(function(p,k){out[p]=act[k];});
   return out;
 }
+/* v4.22 — race type from the card's stkorclm / claimamt / age_restr */
+function _raceTypeLabel(r){
+  var T={MS:'Maiden Special Weight',MC:'Maiden Claiming',MO:'Maiden Optional Claiming',MD:'Maiden',CL:'Claiming',SO:'Starter Optional Claiming',
+         SA:'Starter Allowance',AL:'Allowance',OC:'Allowance Optional Claiming',ST:'Stakes',HC:'Handicap',RH:'Restricted Handicap'};
+  var c=(r.stkorclm||'').trim(),t=T[c]||c;if(!t)return '';
+  if(r.claimAmt>0&&/Claiming/.test(t))t+=' $'+Math.round(r.claimAmt).toLocaleString();
+  var a=r.ageRestr||'',m=a.match(/^0?(\d)(U?)$/i);
+  if(m)t+=' · '+m[1]+'YO'+(m[2]?'+':'');
+  return t;
+}
+function _raceTypeChip(r){var t=_raceTypeLabel(r);return t?'<span class="mp mp-d" style="color:var(--white)">'+t.toUpperCase()+'</span>':'';}
 function _offTurfBtn(idx,r){
   if(!r||(r.surfaceOrig!==undefined?r.surfaceOrig:r.surface)!=='T')return '';
   var on=!!r.offTurf;
