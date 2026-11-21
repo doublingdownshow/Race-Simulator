@@ -6847,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.20';
-var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
+var BUILD_VERSION = 'v4.21';
+var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · ⚠ NEED THE LEAD chip (display only) · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -7195,6 +7195,11 @@ function parseMain(xml){
           biasstyle:pg('biasstyle').toUpperCase()
         });
       }
+      var ntlpp=[];
+      for(var npi=0;npi<Math.min(ppNodes.length,10);npi++){var nN=ppNodes[npi];
+        var ng=function(t){var el=nN.querySelector(t);var v=el?el.textContent.trim():'';return v===''?null:(isNaN(parseFloat(v))?null:parseFloat(v));};
+        var nsEl=nN.querySelector('surface');
+        ntlpp.push({p1:ng('position1'),p2:ng('position2'),fin:ng('positionfi'),fs:ng('fieldsize'),surf:nsEl?nsEl.textContent.trim().toUpperCase().charAt(0):''});}
       var workouts=[];
       he.querySelectorAll('workoutdata').forEach(function(w){
         var wtEl=w.querySelector('worktext');var txt=wtEl?wtEl.textContent.trim():'';
@@ -7204,7 +7209,7 @@ function parseMain(xml){
       });
       race.horses.push({
         pp:parseInt(hg('program')||hg('pp')||'0'),prog:(hg('program')||hg('pp')||'').trim(),post:parseInt(hg('pp')||'0'),
-        name:hg('horse_name')||'UNKNOWN',
+        name:hg('horse_name')||'UNKNOWN',ntlpp:ntlpp,
         odds:hg('morn_odds')||'20/1',
         power:n(hg('power')),avgSpd:n(hg('avgspd')||hg('avg_spd_sd')),hiSpd:n(hg('hi_spd_sd')),
         avgcls:n(hg('avgcls')||hg('ave_cl_sd')),avpurval:n(hg('av_pur_val')),
@@ -8062,6 +8067,7 @@ var SCENARIO_COLOR_V3={HOT_PACE:'#c05030',LONE_SPEED:'#30a060',CONTESTED_SPEED:'
    confirmed on 102 Oct/Nov races (log-loss best at 16-20).
    ═══════════════════════════════════════════════════════════════════════ */
 var ML_BLEND_ON=true;
+var NTL_SHOW=true;   /* v4.21 — need-the-lead v2 chip (display only) */
 var WORK_ADJ_ON=true, WORK_ADJ_14=1.30, WORK_ADJ_30=1.15, WORK_ADJ_FTS2=2.0;   /* v4.20 workout-rank adjustment */
 var OVERBET_SHOW=false;   /* v4.18 — OVERBET flag hidden while OVERBET v2 is tested */
 var CLOSER_ADJ=0.85;   /* v4.13 T-CLO — closers (QSP 0–2) win % × 0.85; set 1 to turn off */   /* v4.4 morning-line blend — set false to show engine-only win % */
@@ -8299,6 +8305,23 @@ function simRace(raceIdx, cb){
           engineDetail[i].flags=('🔥 TOP WORK '+best.rank+'/'+best.group+'  '+(engineDetail[i].flags||'')).trim();}
       });
     }
+    /* v4.21 — NEED THE LEAD v2 flag, display only (site/ntl_v2.py; tracking row 15) */
+    if(NTL_SHOW&&horses.length>=3){
+      var _ts=String(race.surfaceOrig!==undefined?race.surfaceOrig:(race.surface||'')).trim().toUpperCase().charAt(0);
+      var _nq=horses.map(function(h){var eh=EM[_eqbKey(h.name)];var v=(eh&&eh.QSP!==undefined&&eh.QSP!==null&&eh.QSP!=='')?+eh.QSP:0;return isNaN(v)?0:v;});
+      var _np=function(L){var led=0,nl=0,bad=0;L.slice(0,10).forEach(function(p){if(!p.p1||!p.fin||!p.fs||p.fin<=0)return;
+        if(p.p1===1&&(p.p2===1||p.p2===null))led++;else if(p.p1>=2){nl++;if(p.fin>p.fs/2)bad++;}});return {led:led,nl:nl,bad:bad};};
+      horses.forEach(function(h,i){
+        var L=h.ntlpp||[];var a=_np(L);engineDetail[i].ntl=false;
+        if(!(a.led>=2&&a.nl>=1&&a.bad>=0.67*a.nl))return;
+        var mo=-1e9;_nq.forEach(function(v,k){if(k!==i&&v>mo)mo=v;});
+        if(mo-_nq[i]<2)return;
+        var b=_np(L.filter(function(p){return p.surf===_ts;}));
+        if(!(b.nl>=1&&b.bad>=0.67*b.nl))return;
+        engineDetail[i].ntl=true;
+        engineDetail[i].flags=('⚠ NEED THE LEAD ('+a.bad+' of '+a.nl+' back half without the lead; out-sped by '+(Math.round((mo-_nq[i])*10)/10)+' QSP)  '+(engineDetail[i].flags||'')).trim();
+      });
+    }
   }
   var n=horses.length,TOTAL=1000,CHUNK=50,simI=0;
   var wins=new Array(n).fill(0),places=new Array(n).fill(0),shows=new Array(n).fill(0);
@@ -8446,7 +8469,7 @@ function separationBadge(scores){
 /* v4.0 tag picker — up to N engine flags: priority list first, then the rest
    (energy-profile, turf-adjust, layoff-start-count and debut/workout flags are
    left out; debut horses get their own badge). */
-var TAG_PRI=[['NO FIGURE',1],['TOP WORK',0],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
+var TAG_PRI=[['NO FIGURE',1],['NEED THE LEAD',1],['TOP WORK',0],['2NDO/L',0],['3RDO/L',0],['4THO/L',0],['LONE_SPEED',0],['KEY_RACE_EXIT',0],['QSP_DOMINATOR',0],['CLASS_DROP',0],['PEAKING',0],['BOUNCE-BACK',0],
              ['TROUBLED',0],['CLOSER-ELITE',0],['PACE_THIEF',0],['DOMINANT',0],
              ['CLASS_CONCERN',1],['REGRESSING',1],['BOUNCING',1],['SPEED_QUITS',1],['LAYOFF',1],['PACE_SHAPE_MISMATCH',1]];
 var TAG_SKIP=/ENERGY|TURF_ADJ|FTS-|WRK-/;   /* v4.5.1: off-layoff (2nd/3rd/4th O/L) flags now shown */
