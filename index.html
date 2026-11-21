@@ -6847,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.23';
-var BUILD_STAMP   = '2026-11-20 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less) · win % from ML blend, closers ×0.85, top works (ranked top 10%) ×1.15–2.0 · ⚠ NEED THE LEAD chip (display only) · race type shown · scratches by name · track condition · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
+var BUILD_VERSION = 'v4.24';
+var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 · ⚠ NEED THE LEAD chip · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8569,7 +8569,7 @@ function buildRanked(res){
     if(b.scoreRaw!==a.scoreRaw)return b.scoreRaw-a.scoreRaw;
     return (a.pp||0)-(b.pp||0);
   });
-  return _nearSwap(_srt,res);
+  return _winOverride(_nearSwap(_srt,res));
 }
 
 // ===== KIDS SHEET =====
@@ -9606,7 +9606,7 @@ function ticketInfo(res,ranked){
      Fall test (401 races): won 42% (111 races); with 2 horses 58%, 3 horses 71%. Forward test from Nov 6 2026. */
   var cons=null;
   if(rows.length>1){
-    var eTop=(rows.filter(function(r){return r.h.engTop;})[0]||rows[0]).h,sTop=null,sBest=-1,mTop=null,mBest=-1,mTie=false;
+    var eTop=(rows[0].h.winOverride?rows[0]:(rows.filter(function(r){return r.h.engTop;})[0]||rows[0])).h,sTop=null,sBest=-1,mTop=null,mBest=-1,mTie=false;
     rows.forEach(function(r){var d=res.engineDetail[r.h.idx]||{};var v=(d.v3w===undefined)?-1:d.v3w;if(v>sBest){sBest=v;sTop=r.h;}
       var q=oddsToProb(r.h.odds);if(q>mBest+1e-9){mBest=q;mTop=r.h;mTie=false;}else if(Math.abs(q-mBest)<=1e-9)mTie=true;});
     if(sTop===eTop&&mTop===eTop&&!mTie&&sBest>0)cons=eTop;
@@ -9686,6 +9686,7 @@ function renderFieldCards(ranked,race){
     var tags=(h.med==='X'?'<span class="flag lasix-f">1st LASIX</span>':'')+
       ((h.lts===0&&h.fts)?'<span class="fts-badge '+(h.fts.flag.indexOf('ELITE')>=0?'fts-elite':h.fts.flag.indexOf('COMBO')>=0?'fts-combo':h.fts.flag.indexOf('SIRE')>=0?'fts-sire':h.fts.flag.indexOf('TRAINER')>=0?'fts-trainer':'fts-weak')+'">'+h.fts.flag+'</span>':'')+
       engineFlagHtml(e)+
+      (h.winOverride?'<span class="flag" title="Moved to the top: its win % is '+WIN_OVERRIDE_PTS+'+ points above the model-score #1. Tested Nov 21 2026 on 830 fall and 2,323 2023 races: more top-pick winners on both (232 to 238, 680 to 691)." style="border:1px solid #6fe0a8;color:#6fe0a8;font-weight:700">⬆ WIN % TOP</span>':'')+
       ((h.engTop&&i>0)?'<span class="flag" title="The engine scored this horse highest. It ranks lower here because the morning line rates it a longer price. In testing, these won less often but paid more ($12.39 average) — a price play, not the most likely winner." style="border:1px solid #c9a84c;color:#c9a84c;font-weight:700">⚙ ENGINE TOP</span>':'');
     html+='<div class="hc'+(top?'':' rest')+'" style="border-top-color:'+(top?top[1]:'var(--border)')+(valueFlag?';outline:2px solid #b07cd6;outline-offset:2px':'')+'">'+
       '<div class="hc-head"><span style="color:'+(top?top[1]:'var(--muted)')+'">'+(top?top[0]:'#'+(i+1))+(valueFlag?' <span style="color:#b07cd6;font-weight:700">◆ VALUE</span>':'')+'</span>'+(top?'<span>MODEL RANK #'+(i+1)+'</span>':'')+'</div>'+
@@ -9874,6 +9875,17 @@ var RANK_BY_WIN = false;
    the higher win % goes first (repeated until settled, so a close group sorts itself by win %).
    0 = pure model-score order. Win % values are never changed. */
 var RANK_NEAR_GAP = 2;
+/* v4.24 — WIN % OVERRIDE: highest win % at least WIN_OVERRIDE_PTS points above the card #1 goes to the top. 0 = off. */
+var WIN_OVERRIDE_PTS = 10;
+function _winOverride(L){
+  if(RANK_BY_WIN||!WIN_OVERRIDE_PTS||!L||!L.length)return L;
+  var act=L.filter(function(r){return !r.scratched;});if(act.length<2)return L;
+  var first=act[0],top=act.slice().sort(function(a,b){return (b.winPct||0)-(a.winPct||0);})[0];
+  L.forEach(function(r){r.winOverride=false;});
+  if(top===first||(top.winPct||0)-(first.winPct||0)<WIN_OVERRIDE_PTS)return L;
+  top.winOverride=true;
+  return [top].concat(L.filter(function(r){return r!==top;}));
+}
 function _nearSwap(L,res){
   if(RANK_BY_WIN||!RANK_NEAR_GAP||!res||!res.weights)return L;
   var act=[],pos=[];
