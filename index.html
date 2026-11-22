@@ -6847,8 +6847,8 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.26';
-var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 · ⚠ NEED THE LEAD chip · ✖ toss flags (red), ★ elite works (green), VALUE flags hidden · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
+var BUILD_VERSION = 'v4.27';
+var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 (first-timers: fast-time works count) · ⚠ NEED THE LEAD chip · ✖ toss flags (red), ★ elite works (green), VALUE flags hidden · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
   var g = document.getElementById('lpGrid');
@@ -8071,6 +8071,9 @@ var VALUE_SHOW=false;   /* v4.25 — VALUE / PRIME_VALUE flags hidden (claude/fl
 var TOSS_RE=/CLASS_BELOW_FIELD|CLASS_CONCERN|LAYOFF CONCERN/i;
 var WORK_RE=/TOP WORK|WRK-ELITE/i;   /* v4.26 green work chips */   /* v4.25 toss flags */
 var NTL_SHOW=true;   /* v4.21 — need-the-lead v2 chip (display only) */
+/* v4.27 — fast-time work: 4f under :48.0 or 5f under 1:00.0 (worktext like "4D(FT)FG : 47.4B", "5D(FT)FG :59.8B") */
+function _fastWork(w){var t=String(w&&w.txt||''),d=t.match(/^(\d)[A-Z]/),s=t.match(/:\s*(\d+\.\d)/);if(!d||!s)return false;var v=parseFloat(s[1]);if(v>=100)v=60+(v-100);return (d[1]==='4'&&v<48)||(d[1]==='5'&&v<60);}
+var WORK_TIME_FTS=true;   /* v4.27 — first-time starters: fast-time works count toward the 2-work rule */
 var WORK_ADJ_ON=true, WORK_ADJ_14=1.30, WORK_ADJ_30=1.15, WORK_ADJ_FTS2=2.0;   /* v4.20 workout-rank adjustment */
 var OVERBET_SHOW=false;   /* v4.18 — OVERBET flag hidden while OVERBET v2 is tested */
 var CLOSER_ADJ=0.85;   /* v4.13 T-CLO — closers (QSP 0–2) win % × 0.85; set 1 to turn off */   /* v4.4 morning-line blend — set false to show engine-only win % */
@@ -8300,12 +8303,14 @@ function simRace(raceIdx, cb){
         var tw=(h.workouts||[]).filter(function(w){return w.daysBack>=0&&w.daysBack<=30&&w.group>=10&&w.rank>0&&w.rank/w.group<=0.10;});
         var tw14=tw.filter(function(w){return w.daysBack<=14;}).length;
         var fts=!(h.pps&&h.pps.length);var m=1;
-        if(fts){if(tw.length>=2)m=WORK_ADJ_FTS2;}
+        var qw=(h.workouts||[]).filter(function(w){return w.daysBack>=0&&w.daysBack<=31&&((w.group>=10&&w.rank>0&&w.rank/w.group<=0.10)||_fastWork(w));});
+        if(fts){if(tw.length>=2||(WORK_TIME_FTS&&qw.length>=2))m=WORK_ADJ_FTS2;}
         else if(tw14>=1)m=WORK_ADJ_14; else if(tw.length>=1)m=WORK_ADJ_30;
         engineDetail[i].workAdj=m;
         if(m!==1&&weights[i]>0){weights[i]*=m;
           var best=tw.slice().sort(function(a,b){return a.rank/a.group-b.rank/b.group;})[0];
-          engineDetail[i].flags=('🔥 TOP WORK '+best.rank+'/'+best.group+'  '+(engineDetail[i].flags||'')).trim();}
+          var wl=best?best.rank+'/'+best.group:'';if(fts&&tw.length<2){var nf=qw.filter(_fastWork).length;wl=(wl?wl+' + ':'')+nf+' fast time'+(nf>1?'s':'');}
+          engineDetail[i].flags=('🔥 TOP WORK '+wl+'  '+(engineDetail[i].flags||'')).trim();}
       });
     }
     /* v4.21 — NEED THE LEAD v2 flag, display only (site/ntl_v2.py; tracking row 15) */
