@@ -9413,7 +9413,7 @@ function _runAllAndPrintRaw(){
 }
 
 /* v4.0 printable horse cards (light theme, one compact row per horse) */
-function printCardsHtml(ranked,race){
+function printCardsHtml(ranked,race,consPP){
   var act=ranked.filter(function(h){return !h.scratched;});
   var cls=act.filter(function(h){return h.avgcls>0;}).map(function(h){return h.avgcls;});
   var cMax=cls.length>1?Math.max.apply(null,cls):null,cMin=cls.length>1?Math.min.apply(null,cls):null;
@@ -9431,7 +9431,7 @@ function printCardsHtml(ranked,race){
     if(h.lts===0&&h.fts)tags='<span style="border:1px solid #7a40c0;color:#7a40c0;padding:0 4px;margin-right:3px;font-size:9px">'+h.fts.flag+'</span>'+tags;
     var days=e.days?(+e.days>=90?box(e.days,'#c03040'):e.days):'—';
     var ac=h.avgcls>0?(h.avgcls===cMax?box(h.avgcls,'#2a8a4a'):h.avgcls===cMin?box(h.avgcls,'#c03040'):h.avgcls):'—';
-    out+='<div style="display:grid;grid-template-columns:32px 2.15fr 1fr 1.55fr;gap:7px;align-items:center;border:1px solid #c8c8b8;border-left:4px solid '+(top?top[1]:'#c8c8b8')+';padding:4px 7px;margin-bottom:3px;page-break-inside:avoid;font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums'+(vf?';outline:1.5px solid #9a5cc6':'')+'">'+
+    out+='<div style="display:grid;grid-template-columns:32px 2.15fr 1fr 1.55fr;gap:7px;align-items:center;border:1px solid #c8c8b8;border-left:4px solid '+(top?top[1]:'#c8c8b8')+';padding:4px 7px;margin-bottom:3px;page-break-inside:avoid;'+((consPP!=null&&h.pp===consPP)?'background:#eaf6ec;-webkit-print-color-adjust:exact;print-color-adjust:exact;':'')+'font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums'+(vf?';outline:1.5px solid #9a5cc6':'')+'">'+
       '<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:17px;font-family:Arial,Helvetica,sans-serif;background:'+kidPostColor(h.pp)+';color:'+kidPostTextColor(h.pp)+';border:1px solid #888">'+h.pp+'</div>'+
       '<div style="min-width:0"><div style="font-size:9px;letter-spacing:.5px;color:'+(top?top[1]:'#555')+'">'+(top?top[0]:'#'+(i+1))+(vf?' ◆ VALUE':'')+'</div>'+
         '<div style="font-size:15px;line-height:1.15">'+h.name+'</div>'+
@@ -9476,7 +9476,7 @@ function printAllResults(){
     html+='<div class="print-pace-label" style="color:'+(pa.speedColor||pa.scenarioColor)+'">'+(pa.speedLabel||pa.scenario.replace(/_/g,' '))+'</div>';
     html+='<div class="print-pace-desc">'+(pa.speedDesc||pa.scenarioDesc)+'</div>';
     html+='</div>';
-    html+=printCardsHtml(ranked,race);
+    html+=printCardsHtml(ranked,race,_consPP(res,ranked));
     if(res.engineDetail&&res.engineDetail[0]&&res.engineDetail[0].src==='engine'){
       var pTI=ticketInfo(res,ranked);
       var pT=function(L){var l=pTI.rows.filter(function(r){return r.tier===L;});return l.length?l.map(function(r){return '#'+r.h.pp+' '+r.h.name;}).join(', '):'—';};
@@ -9674,7 +9674,8 @@ function renderTicketBuilder(res,ranked){
 
 
 /* ═══ v4.0 STACKED HORSE CARDS — every horse, model order (replaces Top Picks + Full Field table) ═══ */
-function renderFieldCards(ranked,race){
+function _consPP(res,ranked){try{if(!res||!res.engineDetail||!res.engineDetail[0]||res.engineDetail[0].src!=='engine')return null;var c=ticketInfo(res,ranked.filter(function(h){return !h.scratched;})).cons;return c?c.pp:null;}catch(e){return null;}}
+function renderFieldCards(ranked,race,consPP){
   var wrap=document.getElementById('fieldCards');if(!wrap)return;
   var act=ranked.filter(function(h){return !h.scratched;});
   var cls=act.filter(function(h){return h.avgcls>0;}).map(function(h){return h.avgcls;});
@@ -9699,7 +9700,7 @@ function renderFieldCards(ranked,race){
       engineFlagHtml(e)+
       (h.winOverride?'<span class="flag" title="Moved to the top: its win % is '+WIN_OVERRIDE_PTS+'+ points above the model-score #1. Tested Nov 21 2026 on 830 fall and 2,323 2023 races: more top-pick winners on both (232 to 238, 680 to 691)." style="border:1px solid #6fe0a8;color:#6fe0a8;font-weight:700">⬆ WIN % TOP</span>':'')+
       ((h.engTop&&i>0)?'<span class="flag" title="The engine scored this horse highest. It ranks lower here because the morning line rates it a longer price. In testing, these won less often but paid more ($12.39 average) — a price play, not the most likely winner." style="border:1px solid #c9a84c;color:#c9a84c;font-weight:700">⚙ ENGINE TOP</span>':'');
-    html+='<div class="hc'+(top?'':' rest')+'" style="border-top-color:'+(top?top[1]:'var(--border)')+(valueFlag?';outline:2px solid #b07cd6;outline-offset:2px':'')+'">'+
+    html+='<div class="hc'+(top?'':' rest')+'" style="border-top-color:'+(top?top[1]:'var(--border)')+((consPP!=null&&h.pp===consPP)?';background:linear-gradient(rgba(82,183,136,.10),rgba(82,183,136,.10)),var(--card)':'')+(valueFlag?';outline:2px solid #b07cd6;outline-offset:2px':'')+'">'+
       '<div class="hc-head"><span style="color:'+(top?top[1]:'var(--muted)')+'">'+(top?top[0]:'#'+(i+1))+(valueFlag?' <span style="color:#b07cd6;font-weight:700">◆ VALUE</span>':'')+'</span>'+(top?'<span>MODEL RANK #'+(i+1)+'</span>':'')+'</div>'+
       '<div class="hc-body">'+
         '<div><div class="hc-id"><span class="pp-box hc-pp" style="background:'+kidPostColor(h.pp)+';color:'+kidPostTextColor(h.pp)+(h.pp==2||h.pp==18?';border-color:#8a8a7a':'')+'">'+h.pp+'</span>'+
@@ -9979,7 +9980,7 @@ function renderResults(){
     card.innerHTML='<div class="plbl">'+lbl+(valueFlag?' <span style="color:#b07cd6;font-weight:700">\u25C6 VALUE</span>':'')+'</div><div class="pname">'+top.name+'</div><div class="psub">PP'+top.pp+' · '+top.odds+' MO · '+st.label+(top.eng&&top.eng.form&&top.eng.form!=='CONSISTENT'?' · '+top.eng.form:'')+'</div><div class="style-bar">'+pipHtml+'<span class="style-label">'+styleDesc(top)+'</span></div><div class="pstats"><div class="pstat"><span class="val">'+(top.score||0).toFixed(1)+'</span><span class="lbl">MODEL SCORE</span></div><div class="pstat"><span class="val">'+top[sk]+'%</span><span class="lbl">'+vl+' RATE</span></div><div class="pstat"><span class="val">'+(top.pfigfin||'—')+'</span><span class="lbl">FIN PACE FIG</span></div></div>';
     pg.appendChild(card);
   });
-  renderFieldCards(ranked,race);
+  renderFieldCards(ranked,race,_consPP(simResults,ranked));
   renderPaceScenario(paceAnalysis,horses,ranked);
 
   var tbody=document.getElementById('winTbody');tbody.innerHTML='';
