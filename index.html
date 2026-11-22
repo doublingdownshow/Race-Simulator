@@ -9428,6 +9428,7 @@ function printCardsHtml(ranked,race,consPP){
     var e=h.eng||{},bk=BK[e.bucket]||['—','#888'],top=TOP[i],col=top?top[1]:'#1a1a0a';
     var vf=false;if(i===0&&race.surface!=='T'){var imp=oddsToProb(h.odds)*100;if(favH&&favH.pp!==h.pp&&imp>0&&h.winPct>=2*imp)vf=true;}
     var tags=pickTags(e,4).map(function(t){return '<span style="display:inline-block;white-space:nowrap;margin-bottom:2px;border:1px solid '+(t.neg?'#c05060':'#3a8a5a')+';color:'+(t.neg?'#b03a4a':'#2a7a4a')+';padding:0 3px;margin-right:2px;font-size:8.5px'+(TOSS_RE.test(t.full)?';background:#b03a4a;color:#fff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact':WORK_RE.test(t.full)?';background:#2a7a4a;color:#fff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact':'')+'">'+(TOSS_RE.test(t.full)?'✖ ':WORK_RE.test(t.full)?'★ ':'')+t.txt+'</span>';}).join('');
+    if(_isLong(h))tags='<span style="display:inline-block;white-space:nowrap;margin-bottom:2px;border:1px solid #b08a10;background:#f5c542;color:#3a2a05;font-weight:700;padding:0 3px;margin-right:2px;font-size:8.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact">💡 LONGSHOT</span>'+tags;
     if(h.lts===0&&h.fts)tags='<span style="border:1px solid #7a40c0;color:#7a40c0;padding:0 4px;margin-right:3px;font-size:9px">'+h.fts.flag+'</span>'+tags;
     var days=e.days?(+e.days>=90?box(e.days,'#c03040'):e.days):'—';
     var ac=h.avgcls>0?(h.avgcls===cMax?box(h.avgcls,'#2a8a4a'):h.avgcls===cMin?box(h.avgcls,'#c03040'):h.avgcls):'—';
