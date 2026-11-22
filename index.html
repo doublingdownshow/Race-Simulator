@@ -9203,6 +9203,7 @@ function _runAllAndPrintPublicRaw() {
     var code = trackCodes[ti];
     var trackRaces = trackStore[code].raceData;
     raceData = trackRaces;
+    applyScratches();   /* v4.27: apply this track's scratches too, not only the track on screen */
 
     var indices = [];
     for (var i = 0; i < raceData.length; i++) {
