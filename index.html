@@ -6847,7 +6847,7 @@ var CAP_RACESHAPE  = 0.05;
 var CAP_TROUBLE2   = 0.03;
 
 var SCORE_SCALE = 180;   // ability -> readable 40-100 range
-var BUILD_VERSION = 'v4.27';
+var BUILD_VERSION = 'v4.28';
 var BUILD_STAMP   = '2026-11-21 · Engine v2.28 · ranked by model score (win % breaks gaps of 2 or less; win % 10+ points clear goes to the top) · win % from ML blend, closers ×0.85, top works ×1.15–2.0 (first-timers: fast-time works count) · ⚠ NEED THE LEAD chip · ✖ toss flags (red), ★ elite works (green), VALUE flags hidden · race type shown · consensus (green) + longshot (yellow) race tabs · OVERBET hidden (v2 on test) · FADE FAVORITE off · off-turf auto';
 
 function renderLockedPanel(){
@@ -9483,7 +9483,7 @@ function printAllResults(){
       html+='<div style="font-family:Courier New,monospace;font-size:9px;border:1px solid #c0c0b0;padding:5px 8px;margin-bottom:8px;line-height:1.6">'+
         '<b>TICKET</b> · <b>A:</b> '+pT('A')+' · <b>B:</b> '+pT('B')+' · <b>C:</b> '+pT('C')+'<br>'+
         (pTI.cons?'<b>✅ CONSENSUS SINGLE: #'+pTI.cons.pp+' '+pTI.cons.name+'</b><br>':'')+
-        '<b>WIDTH: '+pTI.label+'</b>'+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10'+_printWidthBar(pTI)+'</div>';
+        '<b>WIDTH: '+pTI.label+'</b>'+(pTI.rows.length>=10?' · <b>⚠ BIG FIELD ('+pTI.rows.length+')</b>':'')+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10'+_printWidthBar(pTI)+'</div>';
     }
     var pActiveNotes=pa.horseNotes.filter(function(n){return n.erl&&n.erl>0;});
     if(pActiveNotes.length>0){
@@ -9639,7 +9639,7 @@ function renderTicketBuilder(res,ranked){
   var rlHtml=t.raceLabel?'<span class="sep-badge sep-mud" style="margin-left:8px" title="'+(TB_LABEL_STATS[rlKey]||'')+'">ENGINE: '+t.raceLabel+'</span>':'';
   var width='<div style="background:var(--card);border:1px solid var(--border);padding:12px 14px;margin-bottom:10px">'+
     '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px"><span style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--muted)">RACE WIDTH</span>'+
-    '<span style="font-family:monospace;font-size:14px;font-weight:700;color:'+t.col+';margin-left:6px">'+t.label+'</span>'+rlHtml+'</div>'+
+    '<span style="font-family:monospace;font-size:14px;font-weight:700;color:'+t.col+';margin-left:6px">'+t.label+'</span>'+rlHtml+(t.rows.length>=10?'<span title="10+ starters: in testing (2023 + fall 2026) the winner paid 10-1 or more 16-17% of the time (about 1.7x normal) and the card #1 won only about 1 in 5. Being tracked forward (row 35)." style="margin-left:8px;font-family:monospace;font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d0803a;color:#d0803a;border-radius:3px">⚠ BIG FIELD · '+t.rows.length+' starters</span>':'')+'</div>'+
     bar+marks+
     '<div style="font-family:monospace;font-size:11px;color:var(--text);margin-top:4px;line-height:1.7">'+
       'Use <b>'+t.k50+'</b> horse'+(t.k50>1?'s':'')+' to catch the winner about <b>1 in 2</b> · <b>'+t.k65+'</b> for about <b>2 in 3</b> · <b>'+t.k80+'</b> for about <b>9 in 10</b></div>'+
