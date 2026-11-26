@@ -8273,6 +8273,7 @@ function simRace(raceIdx, cb){
       d.pm=eh.PaceRoleMult||1;
       d.engineMult=d.pm;
       d.lastSpd=eh.LastSpeed||d.lastSpd;
+      d.avg4=eh.AvgLast4||0;   /* v4.28 — engine avg of last 4 speed figures, for the printout */
       d.trnrUsed=eh.TrainerPct||d.trnrUsed;
       d.flags=eh.Flags||'';if(!VALUE_SHOW)d.flags=String(d.flags||'').split(/\s{2,}/).filter(function(f){return !/^(PRIME_)?VALUE$/i.test(f.replace(/^[^A-Za-z]+/,'').trim());}).join('  ');if(!OVERBET_SHOW)d.flags=d.flags.split(/\s{2,}/).filter(function(f){return !/OVERBET/i.test(f);}).join('  ');d.tp=eh.TournPick||'';
       d.abc=eh.ABC||'';
@@ -9414,6 +9415,18 @@ function _runAllAndPrintRaw(){
 }
 
 /* v4.0 printable horse cards (light theme, one compact row per horse) */
+/* v4.28 — speed-figure strip on the printout: last race figure and the engine's average of the last 4 figures.
+   First-time starters (and horses with no figures) show a dash — the engine's stand-in value of 64 is not shown. */
+/* v4.29 — ODDS / FAIR stacked in one column (same style as LAST / AVG 4) to give the name + tags column more room */
+function _printOdds(h){
+  function r(l,v){return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:3px"><span style="font-size:8px;letter-spacing:.3px;color:#444">'+l+'</span><span style="font-size:13px;font-weight:700">'+v+'</span></div>';}
+  return '<div style="border-left:1px solid #c8c8b8;padding:0 5px;line-height:1.3">'+r('ODDS',h.odds||'—')+r('FAIR',h.winPct>0?fairOdds(h.winPct):'—')+'</div>';
+}
+function _printFigs(h){
+  var e=h.eng||{},deb=(h.lts===0),last=deb?0:(+e.lastSpd||0),avg=deb?0:(+e.avg4||0);
+  function r(l,v){return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:4px"><span style="font-size:8px;letter-spacing:.3px;color:#444">'+l+'</span><span style="font-size:13px;font-weight:700">'+(v>0?Math.round(v):'—')+'</span></div>';}
+  return '<div style="border-left:1px solid #c8c8b8;padding-left:6px;line-height:1.3">'+r('LAST',last)+r('AVG 4',avg)+'</div>';
+}
 function printCardsHtml(ranked,race,consPP){
   var act=ranked.filter(function(h){return !h.scratched;});
   var cls=act.filter(function(h){return h.avgcls>0;}).map(function(h){return h.avgcls;});
@@ -9433,18 +9446,18 @@ function printCardsHtml(ranked,race,consPP){
     if(h.lts===0&&h.fts)tags='<span style="border:1px solid #7a40c0;color:#7a40c0;padding:0 4px;margin-right:3px;font-size:9px">'+h.fts.flag+'</span>'+tags;
     var days=e.days?(+e.days>=90?box(e.days,'#c03040'):e.days):'—';
     var ac=h.avgcls>0?(h.avgcls===cMax?box(h.avgcls,'#2a8a4a'):h.avgcls===cMin?box(h.avgcls,'#c03040'):h.avgcls):'—';
-    out+='<div style="display:grid;grid-template-columns:32px 2.15fr 1fr 1.55fr;gap:7px;align-items:center;border:1px solid #c8c8b8;border-left:4px solid '+(top?top[1]:'#c8c8b8')+';padding:4px 7px;margin-bottom:3px;page-break-inside:avoid;'+((consPP!=null&&h.pp===consPP)?'background:#eaf6ec;-webkit-print-color-adjust:exact;print-color-adjust:exact;':_isLong(h)?'background:#fdf6d8;-webkit-print-color-adjust:exact;print-color-adjust:exact;':'')+'font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums'+(vf?';outline:1.5px solid #9a5cc6':'')+'">'+
+    out+='<div style="display:grid;grid-template-columns:32px minmax(0,1fr) 118px 236px 58px;gap:5px;align-items:center;border:1px solid #c8c8b8;border-left:4px solid '+(top?top[1]:'#c8c8b8')+';padding:4px 7px;margin-bottom:3px;page-break-inside:avoid;'+((consPP!=null&&h.pp===consPP)?'background:#eaf6ec;-webkit-print-color-adjust:exact;print-color-adjust:exact;':_isLong(h)?'background:#fdf6d8;-webkit-print-color-adjust:exact;print-color-adjust:exact;':'')+'font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums'+(vf?';outline:1.5px solid #9a5cc6':'')+'">'+
       '<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:17px;font-family:Arial,Helvetica,sans-serif;background:'+kidPostColor(h.pp)+';color:'+kidPostTextColor(h.pp)+';border:1px solid #888">'+h.pp+'</div>'+
       '<div style="min-width:0"><div style="font-size:9px;letter-spacing:.5px;color:'+(top?top[1]:'#555')+'">'+(top?top[0]:'#'+(i+1))+(vf?' ◆ VALUE':'')+'</div>'+
         '<div style="font-size:15px;line-height:1.15">'+h.name+'</div>'+
         '<div style="font-size:9.5px;color:#333">'+(h.jn||'—')+' / '+(h.tn||'—')+'</div>'+
         (tags?'<div style="margin-top:2px">'+tags+'</div>':'')+'</div>'+
-      '<div style="display:flex;gap:10px;align-items:flex-end"><div><div style="font-size:21px;line-height:1;color:'+col+'">'+(h.score||0).toFixed(1)+'</div><div style="font-size:8px;letter-spacing:.5px;color:#444;margin-top:2px">SCORE</div></div>'+
+      '<div style="display:grid;grid-template-columns:52px 66px;align-items:end"><div><div style="font-size:21px;line-height:1;color:'+col+'">'+(h.score||0).toFixed(1)+'</div><div style="font-size:8px;letter-spacing:.5px;color:#444;margin-top:2px">SCORE</div></div>'+
         '<div><div style="font-size:21px;line-height:1">'+h.winPct+'%</div><div style="font-size:8px;letter-spacing:.5px;color:#444;margin-top:2px">WIN</div></div>'+
-        '<div style="font-size:10px;color:#333;line-height:1.35;white-space:nowrap">PL '+h.placePct+'%<br>SH '+h.showPct+'%</div></div>'+
-      '<div style="display:grid;grid-template-columns:repeat(6,1fr)">'+
-        cell('ODDS',h.odds)+cell('FAIR',h.winPct>0?fairOdds(h.winPct):'—')+cell('STYLE','<span style="color:'+bk[1]+'">'+bk[0]+'</span>')+
-        cell('QSP',e.qsp!==undefined&&e.qsp!==null?e.qsp:'—')+cell('DAYS',days)+cell('AVG CLS',ac)+'</div></div>';
+        '</div>'+
+      '<div style="display:grid;grid-template-columns:64px 54px 34px 42px 42px">'+
+        _printOdds(h)+cell('STYLE','<span style="color:'+bk[1]+'">'+bk[0]+'</span>')+
+        cell('QSP',e.qsp!==undefined&&e.qsp!==null?e.qsp:'—')+cell('DAYS',days)+cell('AVG CLS',ac)+'</div>'+_printFigs(h)+'</div>';
   });
   (race.horses||[]).filter(function(h){return h.scratched;}).forEach(function(h){
     out+='<div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#a03040;margin-bottom:2px">✂ SCRATCHED — #'+h.pp+' '+h.name+'</div>';
@@ -9471,7 +9484,8 @@ function printAllResults(){
     html+='<div class="print-race-page">';
     html+='<div class="print-header">';
     html+='<div><div class="print-title">Race '+race.race+' — '+trackTitle+'</div>';
-    html+='<div class="print-meta">'+date+' · '+(race.dist||'')+'  '+sf+(race.purse?' · $'+parseInt(race.purse).toLocaleString():'')+'</div></div>';
+    var _rtl=_raceTypeLabel(race);
+    html+='<div class="print-meta">'+date+' · '+(race.dist||'')+'  '+sf+(race.purse?' · $'+parseInt(race.purse).toLocaleString():'')+'</div>'+(_rtl?'<div style="display:inline-block;margin-top:4px;font-size:12px;font-weight:700;letter-spacing:.5px;border:1.5px solid #1a1a0a;padding:1px 7px">'+_rtl.toUpperCase()+'</div>':'')+'</div>';
     html+='<div class="print-meta">1,000 Simulations · Doubling Down Simulator v4 · Engine v2.28</div>';
     html+='</div>';
     html+='<div class="print-pace" style="border-left:3px solid '+pa.scenarioColor+';margin-bottom:10px">';
@@ -9482,15 +9496,15 @@ function printAllResults(){
     if(res.engineDetail&&res.engineDetail[0]&&res.engineDetail[0].src==='engine'){
       var pTI=ticketInfo(res,ranked);
       var pT=function(L){var l=pTI.rows.filter(function(r){return r.tier===L;});return l.length?l.map(function(r){return '#'+r.h.pp+' '+r.h.name;}).join(', '):'—';};
-      html+='<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;border:1px solid #b0b0a0;padding:6px 9px;margin-bottom:8px;line-height:1.55">'+
-        '<b>TICKET</b> · <b>A:</b> '+pT('A')+' · <b>B:</b> '+pT('B')+' · <b>C:</b> '+pT('C')+'<br>'+
+      html+='<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;border:1px solid #b0b0a0;padding:5px 9px;margin-bottom:6px;line-height:1.4">'+
+        '<b>TICKET</b> &nbsp;<b>A:</b> '+pT('A')+'<br><span style="padding-left:54px"><b>B:</b> '+pT('B')+'</span><br><span style="padding-left:54px"><b>C:</b> '+pT('C')+'</span><br>'+
         (pTI.cons?'<b>✅ CONSENSUS SINGLE: #'+pTI.cons.pp+' '+pTI.cons.name+'</b><br>':'')+
         '<b>WIDTH: '+pTI.label+'</b>'+(pTI.rows.length>=10?' · <b>⚠ BIG FIELD ('+pTI.rows.length+')</b>':'')+(pTI.raceLabel?' ('+pTI.raceLabel.replace(/^[^A-Z]+/,'')+')':'')+' — '+pTI.k50+' horses ≈ 1 in 2 · '+pTI.k65+' ≈ 2 in 3 · '+pTI.k80+' ≈ 9 in 10'+_printWidthBar(pTI)+'</div>';
     }
     var pActiveNotes=pa.horseNotes.filter(function(n){return n.erl&&n.erl>0;});
     if(pActiveNotes.length>0){
-      var pSVW=700,pNN=pActiveNotes.length,pSVH=Math.max(200,pNN*28+56);
-      var pPAD_L=175,pPAD_R=200,pPAD_T=30,pPAD_B=30;
+      var pSVW=720,pNN=pActiveNotes.length,pSVH=pNN<=5?Math.max(180,pNN*26+50):Math.max(290,pNN*34+66);
+      var pPAD_L=150,pPAD_R=160,pPAD_T=30,pPAD_B=30;
       var pChartW=pSVW-pPAD_L-pPAD_R,pChartH=pSVH-pPAD_T-pPAD_B;
       var pMaxPos=Math.max.apply(null,pActiveNotes.map(function(n){return Math.max(n.erl||1,n.mid||1,n.fin||1);}));
       pMaxPos=Math.max(pMaxPos,pNN);
@@ -9507,7 +9521,7 @@ function printAllResults(){
       };
       var pXC=[pPAD_L,pPAD_L+pChartW/2,pPAD_L+pChartW];
       var pSC={WIRE:'#c07020',PRESSER:'#a08020',STALKER:'#609020',CLOSER:'#207060',DEEP:'#205090',UNKNOWN:'#808080'};
-      var pSvg='<svg viewBox="0 0 '+pSVW+' '+pSVH+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:'+pSVW+'px;display:block;overflow:visible;margin-bottom:8px">';
+      var pSvg='<svg viewBox="0 0 '+pSVW+' '+pSVH+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;overflow:visible;margin:0 auto 8px">';
       for(var pGi=0;pGi<=4;pGi++){var pGFig=pFigMax-(pFigSpan*pGi/4);var pYY=pPAD_T+(pChartH*pGi/4);pSvg+='<line x1="'+pPAD_L+'" y1="'+pYY+'" x2="'+(pPAD_L+pChartW)+'" y2="'+pYY+'" stroke="#d0d0c0" stroke-width="0.5"/><text x="'+(pPAD_L+3)+'" y="'+(pYY-2)+'" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="9" fill="#888">'+pGFig.toFixed(0)+'</text>';}
       pXC.forEach(function(x){pSvg+='<line x1="'+x+'" y1="'+pPAD_T+'" x2="'+x+'" y2="'+(pPAD_T+pChartH)+'" stroke="#c0c0b0" stroke-width="0.5"/>'; });
       ['EARLY','MID','FINISH'].forEach(function(lbl,li){pSvg+='<text x="'+pXC[li]+'" y="'+(pPAD_T-6)+'" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" fill="#444" letter-spacing="1">'+lbl+'</text>';});
@@ -9554,7 +9568,7 @@ function printAllResults(){
   win.document.write('<style>');
   win.document.write('body{font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums;font-size:11px;color:#111;background:white;margin:0;padding:0;font-weight:bold;}');
   win.document.write('body *{font-weight:bold !important;}');
-  win.document.write('.print-race-page{padding:24px 28px;page-break-after:always;max-width:780px;margin:0 auto;}');
+  win.document.write('.print-race-page{padding:6px 0;page-break-after:always;max-width:780px;margin:0 auto;}');
   win.document.write('.print-race-page:last-child{page-break-after:avoid;}');
   win.document.write('.print-header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #c9a84c;margin-bottom:14px;padding-bottom:8px;}');
   win.document.write('.print-title{font-size:22px;font-weight:700;}');
